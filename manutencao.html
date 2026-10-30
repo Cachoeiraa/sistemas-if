@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Manutenção</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <header>
+    <div class="header-linha">
+      <a class="voltar" href="index.html">&larr; Voltar</a>
+      <h1>Manutenção</h1>
+    </div>
+  </header>
+
+  <main>
+    <section class="card">
+      <h2>Reportar um problema</h2>
+      <form id="form-report" class="estilo">
+        <label>
+          Título *
+          <input name="titulo" type="text" required placeholder="Ex.: Projetor do lab 3 não liga" />
+        </label>
+
+        <label>
+          Descrição *
+          <textarea name="descricao" rows="3" required placeholder="Ex.: Tentei todos os cabos, a luz de power nem acende"></textarea>
+        </label>
+
+        <label>
+          Foto (opcional)
+          <input name="foto" type="file" accept="image/*" />
+        </label>
+
+        <p class="dica">Reportadas são excluídas automaticamente depois de 60 dias.</p>
+        <p id="form-feedback" class="feedback" hidden></p>
+
+        <div class="botoes">
+          <button type="submit" id="btn-enviar" class="btn-primario">Reportar</button>
+        </div>
+      </form>
+    </section>
+
+    <section>
+      <h2 style="margin-bottom: 1rem; font-size: 1.1rem;">Reportadas</h2>
+      <div id="feed" class="feed"></div>
+      <p id="feed-vazio" class="vazio" hidden>Nenhuma reportada — tudo funcionando.</p>
+    </section>
+  </main>
+
+  <footer>
+    <p>Viu algo quebrado? Reporta que a equipe fica sabendo.</p>
+  </footer>
+
+  <script src="comum.js"></script>
+  <script src="manutencao.js"></script>
+</body>
+</html>
