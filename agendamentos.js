@@ -220,7 +220,7 @@ btnProxima.addEventListener("click", () => {
 // ---- Admin ----
 
 function senhaSalva() {
-  return sessionStorage.getItem("senhaAdmin") || "";
+  return sessionStorage.getItem("senha_" + PAGINA) || "";
 }
 
 document.getElementById("btn-admin").addEventListener("click", () => {
@@ -240,14 +240,14 @@ formSenha.addEventListener("submit", async (e) => {
   e.preventDefault();
   const senha = formSenha.elements.senha.value;
   try {
-    const data = await apiGet({ action: "listarPendentes", senha });
+    const data = await apiGet({ action: "listarPendentes", senha, pagina: PAGINA });
     if (!data.ok) {
       senhaFeedback.className = "feedback erro";
       senhaFeedback.textContent = "Senha incorreta.";
       senhaFeedback.hidden = false;
       return;
     }
-    sessionStorage.setItem("senhaAdmin", senha);
+    sessionStorage.setItem("senha_" + PAGINA, senha);
     modalSenha.close();
     adminPanel.hidden = false;
     renderPendentes(data.pendentes || []);
@@ -300,7 +300,7 @@ function renderAprovados() {
 
 async function carregarAdmin() {
   try {
-    const data = await apiGet({ action: "listarPendentes", senha: senhaSalva() });
+    const data = await apiGet({ action: "listarPendentes", senha: senhaSalva(), pagina: PAGINA });
     if (!data.ok) {
       adminPanel.innerHTML = `<p class="vazio">Senha inválida ou expirada. Recarregue a página.</p>`;
       return;

@@ -146,7 +146,7 @@ function initAvisosAdmin(pagina, getSenha) {
     if (!confirm("Excluir esse aviso?")) return;
     btn.disabled = true;
     try {
-      await apiPost({ action: "excluirAviso", id: btn.dataset.aviso, senha: getSenha() });
+      await apiPost({ action: "excluirAviso", id: btn.dataset.aviso, pagina, senha: getSenha() });
       setTimeout(() => {
         renderAvisosAdmin(pagina);
         carregarAvisos(pagina);

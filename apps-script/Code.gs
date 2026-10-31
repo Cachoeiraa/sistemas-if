@@ -12,11 +12,26 @@
 
 const CALENDAR_ID = "e08a2e0b458f1e160be4e56aa8820316753da6ea031e66bef9a78d2b585e9dc5@group.calendar.google.com";
 
-// A senha do admin fica FORA do código: em Projeto > Configurações >
-// Propriedades do script > adicionar SENHA_ADMIN = sua senha.
-// Se não existir lá, vale o padrão abaixo (troque o quanto antes).
-function senhaAdmin() {
-  return PropertiesService.getScriptProperties().getProperty("SENHA_ADMIN") || "admin123";
+// Senhas do admin por área — fora do código, em Projeto > Configurações >
+// Propriedades do script: SENHA_QUADRA, SENHA_ESTUDIO, SENHA_RECLAMACOES
+// (SENHA_ADMIN vale como geral se a da área não existir; o padrão final é "admin123")
+function senhaAdmin(area) {
+  const props = PropertiesService.getScriptProperties();
+  return props.getProperty("SENHA_" + area) || props.getProperty("SENHA_ADMIN") || "admin123";
+}
+
+function servicoDaArea(area) {
+  return area === "ESTUDIO" ? "Estúdio" : "Quadra";
+}
+
+function areaDoAgendamento(id) {
+  const row = ler("Agendamentos").find(r => String(r.id) === String(id));
+  return row && row.servico === "Estúdio" ? "ESTUDIO" : "QUADRA";
+}
+
+function areaDoAviso(id) {
+  const row = ler("Avisos").find(r => String(r.id) === String(id));
+  return row ? String(row.pagina).toUpperCase() : "QUADRA";
 }
 
 const DIAS_POST = 5;    // posts de achados/perdidos expiram em 5 dias
@@ -185,11 +200,15 @@ function doGet(e) {
     case "listarSemana":
       out = listarSemana(txt(p.inicio), txt(p.fim));
       break;
-    case "listarPendentes":
-      out = p.senha === senhaAdmin()
-        ? { ok: true, pendentes: ler("Agendamentos").filter(r => r.status === "pendente").reverse().map(normalizarAgendamento) }
+    case "listarPendentes": {
+      const area = String(p.pagina || "quadra").toUpperCase();
+      out = p.senha === senhaAdmin(area)
+        ? { ok: true, pendentes: ler("Agendamentos")
+            .filter(r => r.status === "pendente" && r.servico === servicoDaArea(area))
+            .reverse().map(normalizarAgendamento) }
         : { ok: false, erro: "senha" };
       break;
+    }
     case "listarEventos":
       out = listarEventos();
       break;
@@ -197,7 +216,8 @@ function doGet(e) {
       out = { ok: true, avisos: avisosDe(p.pagina) };
       break;
     case "verificarSenha":
-      out = p.senha === senhaAdmin() ? { ok: true } : { ok: false, erro: "senha" };
+      out = p.senha === senhaAdmin(String(p.pagina || "reclamacoes").toUpperCase())
+        ? { ok: true } : { ok: false, erro: "senha" };
       break;
     case "status":
       out = { ok: true, status: "Sistemas IF online" };
@@ -242,13 +262,13 @@ function doPost(e) {
       case "excluirEvento": out = excluirEvento(p); break;
       case "postar": out = postar(p); break;
       case "solicitar": out = solicitar(p); break;
-      case "aprovar": out = admin(p, () => atualizar("Agendamentos", p.id, "status", "aprovado")); break;
+      case "aprovar": out = admin(p, areaDoAgendamento(p.id), () => atualizar("Agendamentos", p.id, "status", "aprovado")); break;
       case "recusar":
-      case "excluirAgendamento": out = admin(p, () => excluirLinha("Agendamentos", p.id)); break;
+      case "excluirAgendamento": out = admin(p, areaDoAgendamento(p.id), () => excluirLinha("Agendamentos", p.id)); break;
       case "reportar": out = reportar(p); break;
-      case "excluirReport": out = admin(p, () => excluirLinha("Reports", p.id)); break;
-      case "fixarAviso": out = admin(p, () => fixarAviso(p)); break;
-      case "excluirAviso": out = admin(p, () => excluirLinha("Avisos", p.id)); break;
+      case "excluirReport": out = admin(p, "RECLAMACOES", () => excluirLinha("Reports", p.id)); break;
+      case "fixarAviso": out = admin(p, String(p.pagina || "quadra").toUpperCase(), () => fixarAviso(p)); break;
+      case "excluirAviso": out = admin(p, areaDoAviso(p.id), () => excluirLinha("Avisos", p.id)); break;
       default: out = { ok: false, erro: "acao desconhecida" };
     }
   } catch (err) {
@@ -257,8 +277,8 @@ function doPost(e) {
   return saida(out);
 }
 
-function admin(p, fn) {
-  if (p.senha !== senhaAdmin()) return { ok: false, erro: "senha" };
+function admin(p, area, fn) {
+  if (p.senha !== senhaAdmin(area)) return { ok: false, erro: "senha" };
   return { ok: fn() };
 }
 
