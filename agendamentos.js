@@ -125,7 +125,7 @@ function renderGrade(dias) {
       const diaISO = dataParaISO(d);
 
       if (intervalo) {
-        html += `<td class="intervalo">Intervalo</td>`;
+        html += `<td class="bloqueado">Bloqueado</td>`;
         return;
       }
 
