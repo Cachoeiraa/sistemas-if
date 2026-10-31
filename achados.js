@@ -1,5 +1,5 @@
 const DIAS_POST = 5;
-const EMOJIS = ["🍅", "😂", "😭", "🤡", "💀", "👏", "😱"];
+const EMOJIS = ["🍅", "😂", "😭", "🤡", "👏", "😱"];
 
 const form = document.getElementById("form-post");
 const tipoInput = document.getElementById("tipo");

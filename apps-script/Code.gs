@@ -360,7 +360,7 @@ function postar(p) {
   return { ok: true };
 }
 
-const EMOJIS_REACAO = ["🍅", "😂", "😭", "🤡", "💀", "👏", "😱"];
+const EMOJIS_REACAO = ["🍅", "😂", "😭", "🤡", "👏", "😱"];
 
 function reagir(p) {
   if (!p.id || EMOJIS_REACAO.indexOf(p.emoji) < 0) return { ok: false, erro: "emoji" };
