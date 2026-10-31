@@ -26,6 +26,7 @@ const BLOQUEADOS = {
 const DIAS_SEMANA = [1, 2, 3, 4, 5]; // seg a sex
 const NOMES_DIAS = ["Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"];
 const SERVICOS = ["Quadra"];
+const PAGINA = "quadra"; // identifica os avisos desta página na planilha
 // ------------------------------------
 
 const grade = document.getElementById("grade");
@@ -303,6 +304,7 @@ async function carregarAdmin() {
     }
     renderPendentes(data.pendentes || []);
     renderAprovados();
+    renderAvisosAdmin(PAGINA);
   } catch {
     listaPendentes.innerHTML = `<p class="vazio">Erro ao carregar.</p>`;
   }
@@ -320,4 +322,6 @@ adminPanel.addEventListener("click", async (e) => {
   }
 });
 
+carregarAvisos(PAGINA);
+initAvisosAdmin(PAGINA, senhaSalva);
 carregarSemana();

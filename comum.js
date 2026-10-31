@@ -68,6 +68,95 @@ function somarDias(iso, dias) {
   return d;
 }
 
+// ---- Avisos fixados pelo admin (aparecem no topo, expiram em 5 dias) ----
+
+const DIAS_AVISO = 5;
+
+function expiraAvisoEm(criadoEm) {
+  return fmtDataBR(new Date(new Date(criadoEm).getTime() + DIAS_AVISO * 86400000).toISOString());
+}
+
+async function carregarAvisos(pagina) {
+  const box = document.getElementById("avisos");
+  if (!box) return;
+  try {
+    const data = await apiGet({ action: "listarAvisos", pagina });
+    box.innerHTML = (data.avisos || [])
+      .map((a) => `<div class="aviso">${escapar(a.texto)}<small>avisado ${fmtDataBR(a.criadoEm)} · some ${expiraAvisoEm(a.criadoEm)}</small></div>`)
+      .join("");
+  } catch {}
+}
+
+async function renderAvisosAdmin(pagina) {
+  const lista = document.getElementById("lista-avisos");
+  const vazio = document.getElementById("avisos-vazio");
+  if (!lista) return;
+  try {
+    const data = await apiGet({ action: "listarAvisos", pagina });
+    const avisos = data.avisos || [];
+    vazio.hidden = avisos.length > 0;
+    lista.innerHTML = avisos
+      .map(
+        (a) => `
+        <div class="admin-item">
+          <div class="info">
+            <strong>${escapar(a.texto)}</strong>
+            <small>fixado ${fmtDataBR(a.criadoEm)} · some ${expiraAvisoEm(a.criadoEm)}</small>
+          </div>
+          <div class="botoes">
+            <button class="btn-perigo btn-mini" data-aviso="${escapar(a.id)}">Excluir</button>
+          </div>
+        </div>`
+      )
+      .join("");
+  } catch {
+    lista.innerHTML = `<p class="vazio">Erro ao carregar.</p>`;
+  }
+}
+
+function initAvisosAdmin(pagina, getSenha) {
+  const form = document.getElementById("form-aviso");
+  const lista = document.getElementById("lista-avisos");
+  if (!form || !lista) return;
+
+  form.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const btn = form.querySelector("button[type=submit]");
+    btn.disabled = true;
+    try {
+      await apiPost({
+        action: "fixarAviso",
+        pagina,
+        texto: form.elements.texto.value,
+        senha: getSenha(),
+      });
+      form.reset();
+      setTimeout(() => {
+        renderAvisosAdmin(pagina);
+        carregarAvisos(pagina);
+      }, 1200);
+    } catch {
+      btn.disabled = false;
+    }
+  });
+
+  lista.addEventListener("click", async (e) => {
+    const btn = e.target.closest("button[data-aviso]");
+    if (!btn) return;
+    if (!confirm("Excluir esse aviso?")) return;
+    btn.disabled = true;
+    try {
+      await apiPost({ action: "excluirAviso", id: btn.dataset.aviso, senha: getSenha() });
+      setTimeout(() => {
+        renderAvisosAdmin(pagina);
+        carregarAvisos(pagina);
+      }, 1200);
+    } catch {
+      btn.disabled = false;
+    }
+  });
+}
+
 // Reduz a foto antes de enviar (celular tira foto pesada)
 function fotoBase64(file) {
   return new Promise((resolve) => {

@@ -16,6 +16,8 @@
   </header>
 
   <main>
+    <div id="avisos"></div>
+
     <section class="card">
       <h2>Reportar um problema</h2>
       <form id="form-report" class="estilo">
@@ -57,6 +59,17 @@
       <p class="dica" style="margin-bottom: 0.75rem;">Exclua o que já foi resolvido ou o que for reclamação falsa/troll.</p>
       <div id="lista-admin"></div>
       <p id="admin-vazio" class="vazio" hidden>Nenhuma reportada.</p>
+
+      <h3 style="font-size: 0.9rem; margin: 1rem 0 0.5rem;">Aviso fixo</h3>
+      <p class="dica" style="margin-bottom: 0.5rem;">Aparece no topo desta página e some sozinho depois de 5 dias.</p>
+      <form id="form-aviso" class="estilo">
+        <textarea name="texto" rows="2" required placeholder="Ex.: O banheiro do bloco B vai ficar fechado até sexta"></textarea>
+        <div class="botoes" style="margin-top: 0.25rem;">
+          <button type="submit" class="btn-primario btn-mini">Fixar aviso</button>
+        </div>
+      </form>
+      <div id="lista-avisos" style="margin-top: 0.5rem;"></div>
+      <p id="avisos-vazio" class="vazio" hidden>Nenhum aviso ativo.</p>
     </section>
 
     <section>

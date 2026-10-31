@@ -128,6 +128,28 @@ button, .btn {
 
 .vazio { color: var(--texto-suave); }
 
+/* ---- aviso fixo do admin ---- */
+
+#avisos { display: flex; flex-direction: column; gap: 0.5rem; }
+#avisos:empty { display: none; }
+
+.aviso {
+  background: #fdf3dd;
+  border: 1px solid #f0d48a;
+  border-left: 5px solid var(--amarelo);
+  border-radius: 10px;
+  padding: 0.75rem 1rem;
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+.aviso small {
+  display: block;
+  margin-top: 0.25rem;
+  font-weight: 400;
+  color: var(--texto-suave);
+}
+
 /* ---- toggle tipo (achados/perdidos) ---- */
 
 .toggle { display: flex; gap: 0.5rem; margin-bottom: 1rem; }

@@ -16,6 +16,8 @@
   </header>
 
   <main>
+    <div id="avisos"></div>
+
     <section class="card">
       <div class="semana-nav">
         <button id="btn-anterior" class="btn btn-sec btn-mini" type="button">&larr; Anterior</button>
@@ -43,6 +45,17 @@
       <h3 style="font-size: 0.9rem; margin: 1rem 0 0.5rem;">Aprovados nesta semana</h3>
       <div id="lista-aprovados"></div>
       <p id="aprovados-vazio" class="vazio" hidden>Nenhum agendamento aprovado nesta semana.</p>
+
+      <h3 style="font-size: 0.9rem; margin: 1rem 0 0.5rem;">Aviso fixo</h3>
+      <p class="dica" style="margin-bottom: 0.5rem;">Aparece no topo desta página e some sozinho depois de 5 dias.</p>
+      <form id="form-aviso" class="estilo">
+        <textarea name="texto" rows="2" required placeholder="Ex.: A quadra não vai abrir na quinta"></textarea>
+        <div class="botoes" style="margin-top: 0.25rem;">
+          <button type="submit" class="btn-primario btn-mini">Fixar aviso</button>
+        </div>
+      </form>
+      <div id="lista-avisos" style="margin-top: 0.5rem;"></div>
+      <p id="avisos-vazio" class="vazio" hidden>Nenhum aviso ativo.</p>
     </section>
   </main>
 

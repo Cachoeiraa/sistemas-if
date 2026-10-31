@@ -16,6 +16,7 @@ const SENHA_ADMIN = "admin123"; // senha do painel de admin dos Agendamentos —
 
 const DIAS_POST = 5;    // posts de achados/perdidos expiram em 5 dias
 const DIAS_REPORT = 60; // reportadas de manutenção expiram em 60 dias
+const DIAS_AVISO = 5;   // avisos fixados pelo admin expiram em 5 dias
 
 const PROP_SS = "PLANILHA_ID";
 const PROP_PASTA = "PASTA_FOTOS_ID";
@@ -25,6 +26,7 @@ const CABECALHOS = {
   Posts: ["id", "tipo", "nome", "ondeAchou", "ondeDeixou", "descricao", "foto", "fotoId", "criadoEm"],
   Reports: ["id", "titulo", "descricao", "foto", "fotoId", "criadoEm", "tipo"],
   Agendamentos: ["id", "dia", "inicio", "fim", "servico", "nome", "turma", "status", "criadoEm"],
+  Avisos: ["id", "pagina", "texto", "criadoEm"],
 };
 
 // ---------- infra: planilha + pasta de fotos ----------
@@ -186,6 +188,9 @@ function doGet(e) {
     case "listarEventos":
       out = listarEventos();
       break;
+    case "listarAvisos":
+      out = { ok: true, avisos: avisosDe(p.pagina) };
+      break;
     case "verificarSenha":
       out = p.senha === SENHA_ADMIN ? { ok: true } : { ok: false, erro: "senha" };
       break;
@@ -237,6 +242,8 @@ function doPost(e) {
       case "excluirAgendamento": out = admin(p, () => excluirLinha("Agendamentos", p.id)); break;
       case "reportar": out = reportar(p); break;
       case "excluirReport": out = admin(p, () => excluirLinha("Reports", p.id)); break;
+      case "fixarAviso": out = admin(p, () => fixarAviso(p)); break;
+      case "excluirAviso": out = admin(p, () => excluirLinha("Avisos", p.id)); break;
       default: out = { ok: false, erro: "acao desconhecida" };
     }
   } catch (err) {
@@ -400,11 +407,33 @@ function reportar(p) {
   return { ok: true };
 }
 
+// ---------- Avisos fixados pelo admin (expiram em DIAS_AVISO dias) ----------
+
+function fixarAviso(p) {
+  if (!p.texto || !p.pagina) return false;
+  adicionar("Avisos", {
+    id: Utilities.getUuid(),
+    pagina: p.pagina,
+    texto: p.texto,
+    criadoEm: new Date().toISOString(),
+  });
+  return true;
+}
+
+function avisosDe(pagina) {
+  const limite = Date.now() - DIAS_AVISO * 86400000;
+  return ler("Avisos")
+    .filter(r => r.pagina === pagina && new Date(r.criadoEm).getTime() > limite)
+    .reverse()
+    .map(r => ({ id: txt(r.id), texto: r.texto, criadoEm: txt(r.criadoEm) }));
+}
+
 // ---------- Limpeza automática (gatilho diário) ----------
 
 function limpezaDiaria() {
   limparExpirados("Posts", DIAS_POST);
   limparExpirados("Reports", DIAS_REPORT);
+  limparExpirados("Avisos", DIAS_AVISO);
   limparAgendamentosPassados();
   limparEventosPassados();
 }

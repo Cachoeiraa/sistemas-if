@@ -1,4 +1,5 @@
 const DIAS_REPORT = 60;
+const PAGINA = "reclamacoes"; // identifica os avisos desta página na planilha
 
 const form = document.getElementById("form-report");
 const feedback = document.getElementById("form-feedback");
@@ -121,6 +122,7 @@ formSenha.addEventListener("submit", async (e) => {
 });
 
 function renderAdmin() {
+  renderAvisosAdmin(PAGINA);
   adminVazio.hidden = reportsCache.length > 0;
   listaAdmin.innerHTML = reportsCache
     .map(
@@ -151,4 +153,6 @@ listaAdmin.addEventListener("click", async (e) => {
   }
 });
 
+carregarAvisos(PAGINA);
+initAvisosAdmin(PAGINA, senhaSalva);
 carregarFeed();
