@@ -14,10 +14,50 @@ const CALENDAR_ID = "e08a2e0b458f1e160be4e56aa8820316753da6ea031e66bef9a78d2b585
 
 // Senhas do admin por área — fora do código, em Projeto > Configurações >
 // Propriedades do script: SENHA_QUADRA, SENHA_ESTUDIO, SENHA_RECLAMACOES
-// (SENHA_ADMIN vale como geral se a da área não existir; o padrão final é "admin123")
+// (SENHA_ADMIN vale como geral; sem propriedade nenhuma, NADA de admin passa)
 function senhaAdmin(area) {
   const props = PropertiesService.getScriptProperties();
-  return props.getProperty("SENHA_" + area) || props.getProperty("SENHA_ADMIN") || "admin123";
+  return props.getProperty("SENHA_" + area) || props.getProperty("SENHA_ADMIN") || "";
+}
+
+// ---------- segurança (roda no servidor — não dá pra burlar pelo HTML) ----------
+
+// Freio anti-spam: máximo de escritas públicas por minuto no site inteiro.
+// Uso normal da escola não chega perto; um flood/script malicioso morre aqui.
+const LIMITE_ESCRITAS_MIN = 30;
+const ACOES_PUBLICAS = {
+  postar: 1, reportar: 1, solicitar: 1, reagir: 1,
+  criarEvento: 1, editarEvento: 1, excluirEvento: 1,
+};
+
+function freioAntiSpam() {
+  const props = PropertiesService.getScriptProperties();
+  const agora = Date.now();
+  const dados = JSON.parse(props.getProperty("RL") || '{"t":0,"n":0}');
+  if (agora - dados.t > 60000) { dados.t = agora; dados.n = 0; }
+  dados.n++;
+  props.setProperty("RL", JSON.stringify(dados));
+  return dados.n <= LIMITE_ESCRITAS_MIN;
+}
+
+// corta texto: trim + tamanho máximo (evita post/reportada gigante)
+function corta(v, max) {
+  return String(v || "").trim().slice(0, max);
+}
+
+function dataValida(iso) {
+  return /^\d{4}-\d{2}-\d{2}$/.test(iso || "");
+}
+
+function horaValida(h) {
+  return /^\d{2}:\d{2}$/.test(h || "");
+}
+
+// Calendário: criar evento é aberto, mas EDITAR/EXCLUIR pede a propriedade
+// SENHA_CALENDARIO SE você configurar uma (senão continua aberto pra turma)
+function eventoLivre(p) {
+  const s = PropertiesService.getScriptProperties().getProperty("SENHA_CALENDARIO");
+  return !s || p.senha === s;
 }
 
 function servicoDaArea(area) {
@@ -159,7 +199,9 @@ function excluirLinha(nome, id) {
 
 function salvarFoto(dataUrl, prefixo) {
   if (!dataUrl) return { url: "", id: "" };
-  const m = String(dataUrl).match(/^data:([^;]+);base64,(.+)$/);
+  // teto ~1MB de imagem e só jpeg/png/webp — evita lixo gigante no Drive
+  if (String(dataUrl).length > 1400000) return { url: "", id: "" };
+  const m = String(dataUrl).match(/^data:image\/(jpeg|png|webp);base64,(.+)$/);
   if (!m) return { url: "", id: "" };
   const blob = Utilities.newBlob(
     Utilities.base64Decode(m[2]), m[1],
@@ -202,7 +244,7 @@ function doGet(e) {
       break;
     case "listarPendentes": {
       const area = String(p.pagina || "quadra").toUpperCase();
-      out = p.senha === senhaAdmin(area)
+      out = p.senha && p.senha === senhaAdmin(area)
         ? { ok: true, pendentes: ler("Agendamentos")
             .filter(r => r.status === "pendente" && r.servico === servicoDaArea(area))
             .reverse().map(normalizarAgendamento) }
@@ -216,7 +258,7 @@ function doGet(e) {
       out = { ok: true, avisos: avisosDe(p.pagina) };
       break;
     case "verificarSenha":
-      out = p.senha === senhaAdmin(String(p.pagina || "reclamacoes").toUpperCase())
+      out = p.senha && p.senha === senhaAdmin(String(p.pagina || "reclamacoes").toUpperCase())
         ? { ok: true } : { ok: false, erro: "senha" };
       break;
     case "status":
@@ -257,6 +299,10 @@ function doPost(e) {
   const p = (e && e.parameter) || {};
   let out;
   try {
+    if (ACOES_PUBLICAS[p.action] && !freioAntiSpam()) {
+      out = { ok: false, erro: "limite" };
+      return saida(out);
+    }
     switch (p.action) {
       case "criarEvento": out = criarEvento(p); break;
       case "editarEvento": out = editarEvento(p); break;
@@ -280,7 +326,8 @@ function doPost(e) {
 }
 
 function admin(p, area, fn) {
-  if (p.senha !== senhaAdmin(area)) return { ok: false, erro: "senha" };
+  // p.senha tem que existir E bater — senha vazia nunca passa
+  if (!p.senha || p.senha !== senhaAdmin(area)) return { ok: false, erro: "senha" };
   return { ok: fn() };
 }
 
@@ -291,8 +338,15 @@ function agenda() {
 }
 
 function criarEvento(p) {
-  if (!p.titulo || !p.data) return { ok: false };
-  salvarEvento(p);
+  const titulo = corta(p.titulo, 120);
+  if (!titulo || !dataValida(p.data)) return { ok: false };
+  salvarEvento({
+    titulo: titulo,
+    data: p.data,
+    hora: horaValida(p.hora) ? p.hora : "",
+    duracao: Math.min(Math.max(parseInt(p.duracao) || 60, 15), 480),
+    descricao: corta(p.descricao, 500),
+  });
   return { ok: true };
 }
 
@@ -300,7 +354,7 @@ function salvarEvento(p) {
   const descricao = p.descricao || "";
   if (p.hora) {
     const ini = new Date(p.data + "T" + p.hora + ":00");
-    const fim = new Date(ini.getTime() + (parseInt(p.duracao) || 60) * 60000);
+    const fim = new Date(ini.getTime() + p.duracao * 60000);
     return agenda().createEvent(p.titulo, ini, fim, { description: descricao });
   }
   return agenda().createAllDayEvent(
@@ -309,12 +363,14 @@ function salvarEvento(p) {
 }
 
 function editarEvento(p) {
+  if (!eventoLivre(p)) return { ok: false, erro: "senha" };
   if (!p.id) return { ok: false };
   excluirEvento(p); // editar = apagar o antigo e criar de novo
   return criarEvento(p);
 }
 
 function excluirEvento(p) {
+  if (!eventoLivre(p)) return { ok: false, erro: "senha" };
   const ev = agenda().getEventById(p.id);
   if (!ev) return { ok: false };
   if (ev.deleteEventSeries) ev.deleteEventSeries(); else ev.deleteEvent();
@@ -342,17 +398,22 @@ function listarEventos() {
 // ---------- Achados e Perdidos ----------
 
 function postar(p) {
-  if (!p.nome || !p.tipo) return { ok: false, erro: "campos" };
-  if (p.tipo === "achado" && (!p.ondeAchou || !p.ondeDeixou)) return { ok: false, erro: "campos" };
-  if (p.tipo === "perdido" && !p.descricao) return { ok: false, erro: "campos" };
-  const foto = salvarFoto(p.foto, p.tipo);
+  const nome = corta(p.nome, 80);
+  const tipo = p.tipo;
+  if (!nome || (tipo !== "achado" && tipo !== "perdido")) return { ok: false, erro: "campos" };
+  const ondeAchou = corta(p.ondeAchou, 120);
+  const ondeDeixou = corta(p.ondeDeixou, 120);
+  const descricao = corta(p.descricao, 600);
+  if (tipo === "achado" && (!ondeAchou || !ondeDeixou)) return { ok: false, erro: "campos" };
+  if (tipo === "perdido" && !descricao) return { ok: false, erro: "campos" };
+  const foto = salvarFoto(p.foto, tipo);
   adicionar("Posts", {
     id: Utilities.getUuid(),
-    tipo: p.tipo,
-    nome: p.nome,
-    ondeAchou: p.ondeAchou || "",
-    ondeDeixou: p.ondeDeixou || "",
-    descricao: p.descricao || "",
+    tipo: tipo,
+    nome: nome,
+    ondeAchou: ondeAchou,
+    ondeDeixou: ondeDeixou,
+    descricao: descricao,
     foto: foto.url,
     fotoId: foto.id,
     criadoEm: new Date().toISOString(),
@@ -401,22 +462,36 @@ const BLOQUEADOS = {
   },
 };
 
+const DIAS_GRADE = { Quadra: "12345", "Estúdio": "123456" }; // domingo nunca entra
+
 function solicitar(p) {
-  if (!p.dia || !p.inicio || !p.servico || !p.nome || !p.turma) {
+  const servico = p.servico;
+  const nome = corta(p.nome, 80);
+  const turma = corta(p.turma, 30);
+  if (!p.dia || !p.inicio || !servico || !nome || !turma) {
     return { ok: false, erro: "campos" };
   }
-  const slotsServico = SLOTS_INICIO[p.servico];
+
+  const slotsServico = SLOTS_INICIO[servico];
   if (!slotsServico || slotsServico.indexOf(p.inicio) < 0) return { ok: false, erro: "horario" };
+
+  // data válida, até 90 dias à frente, e dia que existe na grade do serviço
+  const limite = Utilities.formatDate(new Date(Date.now() + 90 * 86400000), FUSO, "yyyy-MM-dd");
+  if (!dataValida(p.dia) || p.dia > limite) return { ok: false, erro: "dia" };
 
   const partes = p.dia.split("-").map(Number);
   const dow = String(new Date(partes[0], partes[1] - 1, partes[2]).getDay());
-  const mapaBloqueados = (BLOQUEADOS[p.servico] || {})[dow] || [];
+  if (!DIAS_GRADE[servico] || DIAS_GRADE[servico].indexOf(dow) < 0) {
+    return { ok: false, erro: "dia" };
+  }
+
+  const mapaBloqueados = (BLOQUEADOS[servico] || {})[dow] || [];
   if (mapaBloqueados.indexOf(p.inicio) >= 0) {
     return { ok: false, erro: "bloqueado" };
   }
 
   const conflito = ler("Agendamentos").some(
-    r => r.servico === p.servico && txt(r.dia) === p.dia && txt(r.inicio) === p.inicio && r.status === "aprovado"
+    r => r.servico === servico && txt(r.dia) === p.dia && txt(r.inicio) === p.inicio && r.status === "aprovado"
   );
   if (conflito) return { ok: false, erro: "ocupado" };
 
@@ -425,9 +500,9 @@ function solicitar(p) {
     dia: p.dia,
     inicio: p.inicio,
     fim: p.fim || "",
-    servico: p.servico,
-    nome: p.nome,
-    turma: p.turma,
+    servico: servico,
+    nome: nome,
+    turma: turma,
     status: "pendente",
     criadoEm: new Date().toISOString(),
   });
@@ -450,28 +525,35 @@ function listarSemana(inicio, fim) {
 // ---------- Manutenção ----------
 
 function reportar(p) {
-  if (!p.titulo || !p.descricao) return { ok: false, erro: "campos" };
+  const titulo = corta(p.titulo, 120);
+  const descricao = corta(p.descricao, 600);
+  const TIPOS = ["Manutenção", "Reclamação", "Outro"];
+  const tipo = TIPOS.indexOf(p.tipo) >= 0 ? p.tipo : "Manutenção";
+  if (!titulo || !descricao) return { ok: false, erro: "campos" };
   const foto = salvarFoto(p.foto, "manutencao");
   adicionar("Reports", {
     id: Utilities.getUuid(),
-    titulo: p.titulo,
-    descricao: p.descricao,
+    titulo: titulo,
+    descricao: descricao,
     foto: foto.url,
     fotoId: foto.id,
     criadoEm: new Date().toISOString(),
-    tipo: p.tipo || "Manutenção",
+    tipo: tipo,
   });
   return { ok: true };
 }
 
 // ---------- Avisos fixados pelo admin (expiram em DIAS_AVISO dias) ----------
 
+const PAGINAS_AVISO = ["quadra", "estudio", "reclamacoes"];
+
 function fixarAviso(p) {
-  if (!p.texto || !p.pagina) return false;
+  const texto = corta(p.texto, 250);
+  if (!texto || PAGINAS_AVISO.indexOf(p.pagina) < 0) return false;
   adicionar("Avisos", {
     id: Utilities.getUuid(),
     pagina: p.pagina,
-    texto: p.texto,
+    texto: texto,
     criadoEm: new Date().toISOString(),
   });
   return true;
