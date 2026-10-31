@@ -3,14 +3,15 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Manutenção</title>
+  <title>Reportar / Reclamações</title>
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
   <header>
     <div class="header-linha">
       <a class="voltar" href="index.html">&larr; Voltar</a>
-      <h1>Manutenção</h1>
+      <h1>Reportar / Reclamações</h1>
+      <button id="btn-admin" class="btn btn-sec" type="button" style="color: var(--verde-escuro);">Área do admin</button>
     </div>
   </header>
 
@@ -18,6 +19,15 @@
     <section class="card">
       <h2>Reportar um problema</h2>
       <form id="form-report" class="estilo">
+        <label>
+          Tipo *
+          <select name="tipo" required>
+            <option>Manutenção</option>
+            <option>Reclamação</option>
+            <option>Outro</option>
+          </select>
+        </label>
+
         <label>
           Título *
           <input name="titulo" type="text" required placeholder="Ex.: Projetor do lab 3 não liga" />
@@ -33,13 +43,20 @@
           <input name="foto" type="file" accept="image/*" />
         </label>
 
-        <p class="dica">Reportadas são excluídas automaticamente depois de 60 dias.</p>
+        <p class="dica">Reportadas são excluídas automaticamente depois de 60 dias — ou antes, se um admin resolver.</p>
         <p id="form-feedback" class="feedback" hidden></p>
 
         <div class="botoes">
           <button type="submit" id="btn-enviar" class="btn-primario">Reportar</button>
         </div>
       </form>
+    </section>
+
+    <section id="admin-panel" class="admin-box" hidden>
+      <h2 style="font-size: 1.1rem; margin-bottom: 0.75rem;">Painel do admin</h2>
+      <p class="dica" style="margin-bottom: 0.75rem;">Exclua o que já foi resolvido ou o que for reclamação falsa/troll.</p>
+      <div id="lista-admin"></div>
+      <p id="admin-vazio" class="vazio" hidden>Nenhuma reportada.</p>
     </section>
 
     <section>
@@ -49,8 +66,23 @@
     </section>
   </main>
 
+  <dialog id="modal-senha">
+    <form id="form-senha" class="estilo">
+      <h2>Área do admin</h2>
+      <label>
+        Senha do admin
+        <input name="senha" type="password" required autocomplete="off" />
+      </label>
+      <p id="senha-feedback" class="feedback" hidden></p>
+      <div class="botoes">
+        <button type="button" id="btn-senha-cancelar" class="btn-sec">Cancelar</button>
+        <button type="submit" class="btn-primario">Entrar</button>
+      </div>
+    </form>
+  </dialog>
+
   <footer>
-    <p>Viu algo quebrado? Reporta que a equipe fica sabendo.</p>
+    <p>Problema de manutenção, reclamação ou qualquer outra coisa — reporta que a equipe fica sabendo.</p>
   </footer>
 
   <script src="comum.js"></script>

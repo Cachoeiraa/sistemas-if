@@ -23,7 +23,7 @@ const FUSO = "America/Sao_Paulo";
 
 const CABECALHOS = {
   Posts: ["id", "tipo", "nome", "ondeAchou", "ondeDeixou", "descricao", "foto", "fotoId", "criadoEm"],
-  Reports: ["id", "titulo", "descricao", "foto", "fotoId", "criadoEm"],
+  Reports: ["id", "titulo", "descricao", "foto", "fotoId", "criadoEm", "tipo"],
   Agendamentos: ["id", "dia", "inicio", "fim", "servico", "nome", "turma", "status", "criadoEm"],
 };
 
@@ -48,6 +48,12 @@ function aba(nome) {
     sh = ss.insertSheet(nome);
     sh.getRange(1, 1, 1000, CABECALHOS[nome].length).setNumberFormat("@"); // trata tudo como texto
     sh.appendRow(CABECALHOS[nome]);
+  } else {
+    // garante colunas adicionadas depois (migração do cabeçalho)
+    CABECALHOS[nome].forEach((h, i) => {
+      const celula = sh.getRange(1, i + 1);
+      if (!celula.getValue()) celula.setValue(h);
+    });
   }
   return sh;
 }
@@ -180,6 +186,9 @@ function doGet(e) {
     case "listarEventos":
       out = listarEventos();
       break;
+    case "verificarSenha":
+      out = p.senha === SENHA_ADMIN ? { ok: true } : { ok: false, erro: "senha" };
+      break;
     default:
       out = { ok: true, status: "Sistemas IF online" };
   }
@@ -197,7 +206,7 @@ function normalizarPost(r) {
 function normalizarReport(r) {
   return {
     id: txt(r.id), titulo: r.titulo, descricao: r.descricao,
-    foto: r.foto, criadoEm: txt(r.criadoEm),
+    foto: r.foto, criadoEm: txt(r.criadoEm), tipo: r.tipo || "Manutenção",
   };
 }
 
@@ -224,6 +233,7 @@ function doPost(e) {
       case "recusar":
       case "excluirAgendamento": out = admin(p, () => excluirLinha("Agendamentos", p.id)); break;
       case "reportar": out = reportar(p); break;
+      case "excluirReport": out = admin(p, () => excluirLinha("Reports", p.id)); break;
       default: out = { ok: false, erro: "acao desconhecida" };
     }
   } catch (err) {
@@ -382,6 +392,7 @@ function reportar(p) {
     foto: foto.url,
     fotoId: foto.id,
     criadoEm: new Date().toISOString(),
+    tipo: p.tipo || "Manutenção",
   });
   return { ok: true };
 }
