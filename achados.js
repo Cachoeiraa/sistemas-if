@@ -1,4 +1,5 @@
 const DIAS_POST = 5;
+const EMOJIS = ["🍅", "😂", "😭", "🤡", "💀"];
 
 const form = document.getElementById("form-post");
 const tipoInput = document.getElementById("tipo");
@@ -89,10 +90,38 @@ function renderPost(p) {
       <div class="corpo">
         <span class="tag ${p.tipo}">${p.tipo === "achado" ? "Achado" : "Perdido"}</span>
         ${linhas}
+        ${renderReacoes(p)}
         <div class="rodape">Postado em ${fmtDataBR(p.criadoEm)} — some em ${fmtDataBR(expira.toISOString())}</div>
       </div>
     </article>`;
 }
+
+function renderReacoes(p) {
+  let reacoes = {};
+  try { reacoes = JSON.parse(p.reacoes || "{}"); } catch {}
+  const botoes = EMOJIS.map((emoji) => {
+    const n = reacoes[emoji] || 0;
+    const reagiu = localStorage.getItem("reagiu_" + p.id + "_" + emoji);
+    return `<button type="button" class="reacao${reagiu ? " reagiu" : ""}" data-id="${escapar(p.id)}" data-emoji="${emoji}">${emoji}<span>${n || ""}</span></button>`;
+  }).join("");
+  return `<div class="reacoes">${botoes}</div>`;
+}
+
+feed.addEventListener("click", async (e) => {
+  const btn = e.target.closest("button.reacao");
+  if (!btn || btn.classList.contains("reagiu")) return;
+  const { id, emoji } = btn.dataset;
+
+  // marca na hora e já soma +1 (otimista), sem esperar o servidor
+  btn.classList.add("reagiu");
+  localStorage.setItem("reagiu_" + id + "_" + emoji, "1");
+  const span = btn.querySelector("span");
+  span.textContent = (parseInt(span.textContent) || 0) + 1;
+
+  try {
+    await apiPost({ action: "reagir", id, emoji });
+  } catch {}
+});
 
 async function carregarFeed() {
   try {

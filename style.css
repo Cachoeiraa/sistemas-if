@@ -220,6 +220,33 @@ iframe.planilha.alta { height: 560px; }
 .post .campo { font-size: 0.85rem; }
 .post .campo strong { color: var(--texto-suave); font-weight: 600; }
 
+.reacoes {
+  display: flex;
+  gap: 0.4rem;
+  flex-wrap: wrap;
+  margin-top: 0.4rem;
+}
+
+.reacao {
+  font-size: 1.05rem;
+  line-height: 1;
+  padding: 0.3rem 0.55rem;
+  background: var(--fundo);
+  border: 1px solid var(--borda);
+  border-radius: 999px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+}
+
+.reacao:hover { border-color: var(--amarelo); }
+
+.reacao span { font-size: 0.75rem; font-weight: 700; color: var(--texto-suave); }
+
+.reacao.reagiu { background: #fdf3dd; border-color: #f0d48a; cursor: default; }
+.reacao.reagiu span { color: var(--amarelo); }
+
 .post .rodape {
   margin-top: auto;
   padding-top: 0.5rem;

@@ -43,7 +43,7 @@ const PROP_PASTA = "PASTA_FOTOS_ID";
 const FUSO = "America/Sao_Paulo";
 
 const CABECALHOS = {
-  Posts: ["id", "tipo", "nome", "ondeAchou", "ondeDeixou", "descricao", "foto", "fotoId", "criadoEm"],
+  Posts: ["id", "tipo", "nome", "ondeAchou", "ondeDeixou", "descricao", "foto", "fotoId", "criadoEm", "reacoes"],
   Reports: ["id", "titulo", "descricao", "foto", "fotoId", "criadoEm", "tipo"],
   Agendamentos: ["id", "dia", "inicio", "fim", "servico", "nome", "turma", "status", "criadoEm"],
   Avisos: ["id", "pagina", "texto", "criadoEm"],
@@ -233,6 +233,7 @@ function normalizarPost(r) {
     id: txt(r.id), tipo: r.tipo, nome: r.nome,
     ondeAchou: r.ondeAchou, ondeDeixou: r.ondeDeixou,
     descricao: r.descricao, foto: r.foto, criadoEm: txt(r.criadoEm),
+    reacoes: r.reacoes || "",
   };
 }
 
@@ -261,6 +262,7 @@ function doPost(e) {
       case "editarEvento": out = editarEvento(p); break;
       case "excluirEvento": out = excluirEvento(p); break;
       case "postar": out = postar(p); break;
+      case "reagir": out = reagir(p); break;
       case "solicitar": out = solicitar(p); break;
       case "aprovar": out = admin(p, areaDoAgendamento(p.id), () => atualizar("Agendamentos", p.id, "status", "aprovado")); break;
       case "recusar":
@@ -355,6 +357,21 @@ function postar(p) {
     fotoId: foto.id,
     criadoEm: new Date().toISOString(),
   });
+  return { ok: true };
+}
+
+const EMOJIS_REACAO = ["🍅", "😂", "😭", "🤡", "💀"];
+
+function reagir(p) {
+  if (!p.id || EMOJIS_REACAO.indexOf(p.emoji) < 0) return { ok: false, erro: "emoji" };
+  const sh = aba("Posts");
+  const linha = linhaDe("Posts", p.id);
+  if (linha < 0) return { ok: false };
+  const iCol = CABECALHOS.Posts.indexOf("reacoes") + 1;
+  let reacoes = {};
+  try { reacoes = JSON.parse(sh.getRange(linha, iCol).getValue() || "{}"); } catch (e) {}
+  reacoes[p.emoji] = (reacoes[p.emoji] || 0) + 1;
+  sh.getRange(linha, iCol).setValue(JSON.stringify(reacoes));
   return { ok: true };
 }
 
