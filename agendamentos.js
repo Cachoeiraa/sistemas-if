@@ -84,12 +84,6 @@ function diasDaSemana(offset) {
   });
 }
 
-function slotPassou(diaISO, inicio) {
-  const agora = new Date();
-  const fimSlot = new Date(diaISO + "T" + inicio + ":00");
-  return fimSlot < agora;
-}
-
 // popula o <select> de serviços uma vez
 formSolicitar.elements.servico.innerHTML = SERVICOS
   .map((s) => `<option>${escapar(s)}</option>`)
@@ -138,14 +132,14 @@ function renderGrade(dias) {
       const bloqueado = BLOQUEADOS[d.getDay()] && BLOQUEADOS[d.getDay()][inicio];
       const slot = slotsMap[diaISO + "|" + inicio];
 
-      if (bloqueado) {
+      if (bloqueado === "INI1") {
+        html += `<td class="ini1">INI1</td>`;
+      } else if (bloqueado) {
         html += `<td class="bloqueado">${escapar(bloqueado)}</td>`;
       } else if (slot && slot.status === "aprovado") {
         html += `<td class="ocupado"><div class="servico">${escapar(slot.servico)}</div><div class="quem">${escapar(slot.nome)}${slot.turma ? " — " + escapar(slot.turma) : ""}</div></td>`;
       } else if (slot && slot.status === "pendente") {
         html += `<td class="pendente"><div class="servico">${escapar(slot.servico)}</div><div class="quem">${escapar(slot.nome)}${slot.turma ? " — " + escapar(slot.turma) : ""}</div></td>`;
-      } else if (slotPassou(diaISO, inicio)) {
-        html += `<td class="passado">—</td>`;
       } else {
         html += `<td class="livre" data-dia="${diaISO}" data-inicio="${inicio}" data-fim="${fim}">Livre</td>`;
       }

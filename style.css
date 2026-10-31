@@ -244,6 +244,7 @@ table.grade {
 .grade td.pendente .quem { font-size: 0.72rem; color: #92600a; }
 
 .grade td.bloqueado { background: #fdecea; color: var(--vermelho); font-weight: 700; }
+.grade td.ini1 { background: #cdeeda; color: var(--verde-escuro); font-weight: 700; }
 .grade td.intervalo { background: #eef0f2; color: var(--texto-suave); font-style: italic; }
 .grade td.passado { background: #fafafa; color: #cbd2d8; }
 
