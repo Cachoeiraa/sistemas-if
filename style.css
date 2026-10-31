@@ -150,6 +150,18 @@ button, .btn {
   color: var(--texto-suave);
 }
 
+/* ---- planilhas embutidas ---- */
+
+iframe.planilha {
+  width: 100%;
+  height: 300px;
+  border: 1px solid var(--borda);
+  border-radius: 8px;
+  margin-bottom: 0.5rem;
+}
+
+iframe.planilha.alta { height: 560px; }
+
 /* ---- toggle tipo (achados/perdidos) ---- */
 
 .toggle { display: flex; gap: 0.5rem; margin-bottom: 1rem; }
@@ -306,6 +318,9 @@ table.grade {
 @media (max-width: 640px) {
   .hub { grid-template-columns: minmax(0, 340px); }
 }
+
+/* último card ocupa a linha toda quando o total é ímpar */
+.hub a:last-child { grid-column: 1 / -1; }
 
 .main-centro { justify-content: center; }
 
