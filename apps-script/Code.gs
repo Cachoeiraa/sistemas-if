@@ -189,8 +189,11 @@ function doGet(e) {
     case "verificarSenha":
       out = p.senha === SENHA_ADMIN ? { ok: true } : { ok: false, erro: "senha" };
       break;
-    default:
+    case "status":
       out = { ok: true, status: "Sistemas IF online" };
+      break;
+    default:
+      out = { ok: false, erro: "acao desconhecida" };
   }
   return saida(out, p.callback);
 }
