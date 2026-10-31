@@ -25,9 +25,10 @@ const BLOQUEADOS = {
   3: { "08:00": "Bloqueado", "08:50": "Bloqueado", "16:10": "Bloqueado", "17:00": "Bloqueado", "17:50": "Bloqueado" },
   4: { "08:00": "Bloqueado", "08:50": "Bloqueado", "12:30": "Bloqueado", "13:20": "Bloqueado", "17:00": "Bloqueado", "17:50": "Bloqueado" },
   5: { "08:00": "Bloqueado", "08:50": "Bloqueado", "09:40": "Bloqueado", "10:50": "Bloqueado", "11:40": "Bloqueado", "12:30": "Bloqueado", "13:20": "Bloqueado", "14:10": "Bloqueado", "15:00": "Bloqueado", "16:10": "Bloqueado", "17:00": "Bloqueado", "17:50": "Bloqueado" },
+  6: { "08:00": "Bloqueado", "08:50": "Bloqueado", "09:40": "Bloqueado", "10:50": "Bloqueado", "11:40": "Bloqueado", "12:30": "Bloqueado", "13:20": "Bloqueado", "14:10": "Bloqueado", "15:00": "Bloqueado", "16:10": "Bloqueado", "17:00": "Bloqueado", "17:50": "Bloqueado" },
 };
 
-const DIAS_SEMANA = [1, 2, 3, 4, 5]; // seg a sex
+const DIAS_SEMANA = [1, 2, 3, 4, 5, 6]; // seg a sab
 const NOMES_DIAS = ["Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"];
 const SERVICOS = ["Estúdio"];
 const PAGINA = "estudio"; // identifica os avisos desta página na planilha
