@@ -180,6 +180,20 @@ formSolicitar.addEventListener("submit", async (e) => {
     feedback.className = "feedback ok";
     feedback.textContent = "Solicitação enviada! O admin vai aprovar.";
     feedback.hidden = false;
+
+    // atualização otimista: já marca a célula como pendente agora,
+    // sem esperar a planilha confirmar (evita o "flicker" Livre→amarelo)
+    slotsMap[dados.dia + "|" + dados.inicio] = {
+      dia: dados.dia,
+      inicio: dados.inicio,
+      fim: dados.fim,
+      servico: dados.servico,
+      nome: dados.nome,
+      turma: dados.turma,
+      status: "pendente",
+    };
+    renderGrade(diasDaSemana(semanaOffset));
+
     setTimeout(() => {
       modalSolicitar.close();
       carregarSemana();
