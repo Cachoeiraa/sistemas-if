@@ -404,8 +404,8 @@ function postar(p) {
   const ondeAchou = corta(p.ondeAchou, 120);
   const ondeDeixou = corta(p.ondeDeixou, 120);
   const descricao = corta(p.descricao, 600);
+  if (!descricao) return { ok: false, erro: "campos" };
   if (tipo === "achado" && (!ondeAchou || !ondeDeixou)) return { ok: false, erro: "campos" };
-  if (tipo === "perdido" && !descricao) return { ok: false, erro: "campos" };
   const foto = salvarFoto(p.foto, tipo);
   adicionar("Posts", {
     id: Utilities.getUuid(),

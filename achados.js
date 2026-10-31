@@ -6,9 +6,6 @@ const tipoInput = document.getElementById("tipo");
 const btnAchado = document.getElementById("btn-achado");
 const btnPerdido = document.getElementById("btn-perdido");
 const camposAchado = document.getElementById("campos-achado");
-const campoDescricao = document.getElementById("campo-descricao");
-const descOpcional = document.getElementById("desc-opcional");
-const descricaoInput = form.elements.descricao;
 const feedback = document.getElementById("form-feedback");
 const btnEnviar = document.getElementById("btn-enviar");
 const feed = document.getElementById("feed");
@@ -22,17 +19,14 @@ function definirTipo(tipo) {
   btnPerdido.classList.toggle("ativo", !ehAchado);
   btnPerdido.classList.toggle("perdido", !ehAchado);
 
-  // achado: ondeAchou/ondeDeixou obrigatórios, descrição opcional
-  // perdido: descrição obrigatória, campos de lugar escondidos
+  // achado: ondeAchou/ondeDeixou obrigatórios
+  // perdido: campos de lugar escondidos
+  // descrição é obrigatória nos dois
   camposAchado.hidden = !ehAchado;
   form.elements.ondeAchou.required = ehAchado;
   form.elements.ondeAchou.disabled = !ehAchado;
   form.elements.ondeDeixou.required = ehAchado;
   form.elements.ondeDeixou.disabled = !ehAchado;
-
-  descricaoInput.required = !ehAchado;
-  descOpcional.hidden = !ehAchado;
-  campoDescricao.firstChild.textContent = ehAchado ? "Descrição " : "Descrição * ";
 }
 
 btnAchado.addEventListener("click", () => definirTipo("achado"));
