@@ -25,13 +25,7 @@ const BLOQUEADOS = {
 
 const DIAS_SEMANA = [1, 2, 3, 4, 5]; // seg a sex
 const NOMES_DIAS = ["Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"];
-const SERVICOS = [
-  "Quadra",
-  "Laboratório de Informática",
-  "Auditório",
-  "Sala de Estudos",
-  "Outro",
-];
+const SERVICOS = ["Quadra"];
 // ------------------------------------
 
 const grade = document.getElementById("grade");
