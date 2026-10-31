@@ -297,17 +297,20 @@ table.grade {
 /* ---- hub ---- */
 
 .hub {
-  display: flex;
-  flex-wrap: wrap;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(220px, 280px));
   justify-content: center;
   gap: 1rem;
+}
+
+@media (max-width: 640px) {
+  .hub { grid-template-columns: minmax(0, 340px); }
 }
 
 .main-centro { justify-content: center; }
 
 .hub a {
   display: block;
-  width: 260px;
   background: var(--card);
   border: 1px solid var(--borda);
   border-radius: 12px;
