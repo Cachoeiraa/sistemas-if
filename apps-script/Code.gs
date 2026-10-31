@@ -12,7 +12,12 @@
 
 const CALENDAR_ID = "e08a2e0b458f1e160be4e56aa8820316753da6ea031e66bef9a78d2b585e9dc5@group.calendar.google.com";
 
-const SENHA_ADMIN = "admin123"; // senha do painel de admin dos Agendamentos — TROQUE!
+// A senha do admin fica FORA do código: em Projeto > Configurações >
+// Propriedades do script > adicionar SENHA_ADMIN = sua senha.
+// Se não existir lá, vale o padrão abaixo (troque o quanto antes).
+function senhaAdmin() {
+  return PropertiesService.getScriptProperties().getProperty("SENHA_ADMIN") || "admin123";
+}
 
 const DIAS_POST = 5;    // posts de achados/perdidos expiram em 5 dias
 const DIAS_REPORT = 60; // reportadas de manutenção expiram em 60 dias
@@ -181,7 +186,7 @@ function doGet(e) {
       out = listarSemana(txt(p.inicio), txt(p.fim));
       break;
     case "listarPendentes":
-      out = p.senha === SENHA_ADMIN
+      out = p.senha === senhaAdmin()
         ? { ok: true, pendentes: ler("Agendamentos").filter(r => r.status === "pendente").reverse().map(normalizarAgendamento) }
         : { ok: false, erro: "senha" };
       break;
@@ -192,7 +197,7 @@ function doGet(e) {
       out = { ok: true, avisos: avisosDe(p.pagina) };
       break;
     case "verificarSenha":
-      out = p.senha === SENHA_ADMIN ? { ok: true } : { ok: false, erro: "senha" };
+      out = p.senha === senhaAdmin() ? { ok: true } : { ok: false, erro: "senha" };
       break;
     case "status":
       out = { ok: true, status: "Sistemas IF online" };
@@ -253,7 +258,7 @@ function doPost(e) {
 }
 
 function admin(p, fn) {
-  if (p.senha !== SENHA_ADMIN) return { ok: false, erro: "senha" };
+  if (p.senha !== senhaAdmin()) return { ok: false, erro: "senha" };
   return { ok: fn() };
 }
 
