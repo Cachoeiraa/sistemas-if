@@ -64,6 +64,10 @@ function servicoDaArea(area) {
   return area === "ESTUDIO" ? "Estúdio" : "Quadra";
 }
 
+function areaDoServico(servico) {
+  return servico === "Estúdio" ? "ESTUDIO" : "QUADRA";
+}
+
 function areaDoAgendamento(id) {
   const row = ler("Agendamentos").find(r => String(r.id) === String(id));
   return row && row.servico === "Estúdio" ? "ESTUDIO" : "QUADRA";
@@ -87,6 +91,7 @@ const CABECALHOS = {
   Reports: ["id", "titulo", "descricao", "foto", "fotoId", "criadoEm", "tipo"],
   Agendamentos: ["id", "dia", "inicio", "fim", "servico", "nome", "turma", "status", "criadoEm"],
   Avisos: ["id", "pagina", "texto", "criadoEm"],
+  Estados: ["id", "servico", "dia", "inicio", "estado"],
 };
 
 // ---------- infra: planilha + pasta de fotos ----------
@@ -314,6 +319,8 @@ function doPost(e) {
       case "aprovar": out = admin(p, areaDoAgendamento(p.id), () => atualizar("Agendamentos", p.id, "status", "aprovado")); break;
       case "recusar":
       case "excluirAgendamento": out = admin(p, areaDoAgendamento(p.id), () => excluirLinha("Agendamentos", p.id)); break;
+      case "definirEstado": out = admin(p, areaDoServico(p.servico), () => definirEstado(p)); break;
+      case "reservarAdmin": out = admin(p, areaDoServico(p.servico), () => reservarAdmin(p)); break;
       case "reportar": out = reportar(p); break;
       case "excluirReport": out = admin(p, "RECLAMACOES", () => excluirLinha("Reports", p.id)); break;
       case "fixarAviso": out = admin(p, String(p.pagina || "quadra").toUpperCase(), () => fixarAviso(p)); break;
@@ -465,49 +472,97 @@ const BLOQUEADOS = {
 
 const DIAS_GRADE = { Quadra: "12345", "Estúdio": "123456" }; // domingo nunca entra
 
-function solicitar(p) {
+// Override manual do admin (aba Estados): "bloqueado" trava, "livre" libera fixo
+function estadoOverride(servico, dia, inicio) {
+  const row = ler("Estados").find(
+    r => r.servico === servico && txt(r.dia) === dia && txt(r.inicio) === inicio
+  );
+  return row ? String(row.estado) : "";
+}
+
+function validarAgendamento(p) {
   const servico = p.servico;
-  const nome = corta(p.nome, 80);
-  const turma = corta(p.turma, 30);
-  if (!p.dia || !p.inicio || !servico || !nome || !turma) {
-    return { ok: false, erro: "campos" };
+  if (!p.dia || !p.inicio || !servico || !corta(p.nome, 80) || !corta(p.turma, 30)) {
+    return "campos";
   }
-
   const slotsServico = SLOTS_INICIO[servico];
-  if (!slotsServico || slotsServico.indexOf(p.inicio) < 0) return { ok: false, erro: "horario" };
+  if (!slotsServico || slotsServico.indexOf(p.inicio) < 0) return "horario";
 
-  // data válida, até 90 dias à frente, e dia que existe na grade do serviço
   const limite = Utilities.formatDate(new Date(Date.now() + 90 * 86400000), FUSO, "yyyy-MM-dd");
-  if (!dataValida(p.dia) || p.dia > limite) return { ok: false, erro: "dia" };
+  if (!dataValida(p.dia) || p.dia > limite) return "dia";
 
   const partes = p.dia.split("-").map(Number);
   const dow = String(new Date(partes[0], partes[1] - 1, partes[2]).getDay());
-  if (!DIAS_GRADE[servico] || DIAS_GRADE[servico].indexOf(dow) < 0) {
-    return { ok: false, erro: "dia" };
-  }
+  if (!DIAS_GRADE[servico] || DIAS_GRADE[servico].indexOf(dow) < 0) return "dia";
 
+  const ov = estadoOverride(servico, p.dia, p.inicio);
+  if (ov === "bloqueado") return "bloqueado";
   const mapaBloqueados = (BLOQUEADOS[servico] || {})[dow] || [];
-  if (mapaBloqueados.indexOf(p.inicio) >= 0) {
-    return { ok: false, erro: "bloqueado" };
-  }
+  if (ov !== "livre" && mapaBloqueados.indexOf(p.inicio) >= 0) return "bloqueado";
 
   const conflito = ler("Agendamentos").some(
     r => r.servico === servico && txt(r.dia) === p.dia && txt(r.inicio) === p.inicio && r.status === "aprovado"
   );
-  if (conflito) return { ok: false, erro: "ocupado" };
+  if (conflito) return "ocupado";
+  return null;
+}
 
+function solicitar(p) {
+  const erro = validarAgendamento(p);
+  if (erro) return { ok: false, erro: erro };
   adicionar("Agendamentos", {
     id: Utilities.getUuid(),
     dia: p.dia,
     inicio: p.inicio,
     fim: p.fim || "",
-    servico: servico,
-    nome: nome,
-    turma: turma,
+    servico: p.servico,
+    nome: corta(p.nome, 80),
+    turma: corta(p.turma, 30),
     status: "pendente",
     criadoEm: new Date().toISOString(),
   });
   return { ok: true };
+}
+
+// admin bloqueia/desbloqueia/volta ao padrão uma célula específica
+function definirEstado(p) {
+  const slotsServico = SLOTS_INICIO[p.servico];
+  if (!dataValida(p.dia) || !slotsServico || slotsServico.indexOf(p.inicio) < 0) return false;
+  const sh = aba("Estados");
+  const vals = sh.getDataRange().getValues();
+  for (let i = vals.length - 1; i >= 1; i--) {
+    if (String(vals[i][1]) === p.servico && txt(vals[i][2]) === p.dia && txt(vals[i][3]) === p.inicio) {
+      sh.deleteRow(i + 1);
+    }
+  }
+  if (p.estado === "bloqueado" || p.estado === "livre") {
+    adicionar("Estados", {
+      id: Utilities.getUuid(),
+      servico: p.servico,
+      dia: p.dia,
+      inicio: p.inicio,
+      estado: p.estado,
+    });
+  }
+  return true; // "padrao" só remove o override
+}
+
+// admin reserva direto (já nasce aprovado) — pode até em célula bloqueada
+function reservarAdmin(p) {
+  const erro = validarAgendamento(p);
+  if (["campos", "horario", "dia", "ocupado"].indexOf(erro) >= 0) return false;
+  adicionar("Agendamentos", {
+    id: Utilities.getUuid(),
+    dia: p.dia,
+    inicio: p.inicio,
+    fim: p.fim || "",
+    servico: p.servico,
+    nome: corta(p.nome, 80),
+    turma: corta(p.turma, 30),
+    status: "aprovado",
+    criadoEm: new Date().toISOString(),
+  });
+  return true;
 }
 
 function listarSemana(inicio, fim) {
@@ -520,7 +575,10 @@ function listarSemana(inicio, fim) {
       nome: r.nome,
       turma: r.turma,
     }));
-  return { ok: true, slots: slots };
+  const estados = ler("Estados")
+    .filter(r => txt(r.dia) >= inicio && txt(r.dia) <= fim)
+    .map(r => ({ servico: r.servico, dia: txt(r.dia), inicio: txt(r.inicio), estado: r.estado }));
+  return { ok: true, slots: slots, estados: estados };
 }
 
 // ---------- Manutenção ----------

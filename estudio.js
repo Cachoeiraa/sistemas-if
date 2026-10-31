@@ -55,7 +55,8 @@ const pendentesVazio = document.getElementById("pendentes-vazio");
 const aprovadosVazio = document.getElementById("aprovados-vazio");
 
 let semanaOffset = 0;
-let slotsMap = {}; // "dia|inicio" -> slot
+let slotsMap = {}; // "dia|inicio" -> agendamento (pendente/aprovado)
+let overridesMap = {}; // "dia|inicio" -> {estado} setado pelo admin
 
 function dataParaISO(d) {
   return (
@@ -106,8 +107,15 @@ async function carregarSemana() {
       .forEach((s) => {
         slotsMap[s.dia + "|" + s.inicio] = s;
       });
+    overridesMap = {};
+    (data.estados || [])
+      .filter((x) => x.servico === "Estúdio")
+      .forEach((x) => {
+        overridesMap[x.dia + "|" + x.inicio] = x;
+      });
   } catch {
     slotsMap = {};
+    overridesMap = {};
   }
 
   renderGrade(dias);
@@ -132,16 +140,23 @@ function renderGrade(dias) {
       }
 
       const bloqueado = BLOQUEADOS[d.getDay()] && BLOQUEADOS[d.getDay()][inicio];
-      const slot = slotsMap[diaISO + "|" + inicio];
+      const chave = diaISO + "|" + inicio;
+      const slot = slotsMap[chave];
+      const ov = overridesMap[chave];
+      const attrs = `data-dia="${diaISO}" data-inicio="${inicio}" data-fim="${fim}"${slot ? ` data-id="${escapar(slot.id)}"` : ""}`;
 
-      if (bloqueado) {
-        html += `<td class="bloqueado">${escapar(bloqueado)}</td>`;
-      } else if (slot && slot.status === "aprovado") {
-        html += `<td class="ocupado"><div class="servico">${escapar(slot.servico)}</div><div class="quem">${escapar(slot.nome)}${slot.turma ? " — " + escapar(slot.turma) : ""}</div></td>`;
+      if (slot && slot.status === "aprovado") {
+        html += `<td class="ocupado" ${attrs}><div class="servico">${escapar(slot.servico)}</div><div class="quem">${escapar(slot.nome)}${slot.turma ? " — " + escapar(slot.turma) : ""}</div></td>`;
       } else if (slot && slot.status === "pendente") {
-        html += `<td class="pendente"><div class="servico">${escapar(slot.servico)}</div><div class="quem">${escapar(slot.nome)}${slot.turma ? " — " + escapar(slot.turma) : ""}</div></td>`;
+        html += `<td class="pendente" ${attrs}><div class="servico">${escapar(slot.servico)}</div><div class="quem">${escapar(slot.nome)}${slot.turma ? " — " + escapar(slot.turma) : ""}</div></td>`;
+      } else if (ov && ov.estado === "bloqueado") {
+        html += `<td class="bloqueado" ${attrs}>Bloqueado</td>`;
+      } else if (ov && ov.estado === "livre") {
+        html += `<td class="livre" ${attrs}>Livre</td>`;
+      } else if (bloqueado) {
+        html += `<td class="bloqueado" ${attrs}>${escapar(bloqueado)}</td>`;
       } else {
-        html += `<td class="livre" data-dia="${diaISO}" data-inicio="${inicio}" data-fim="${fim}">Livre</td>`;
+        html += `<td class="livre" ${attrs}>Livre</td>`;
       }
     });
     html += "</tr>";
@@ -151,8 +166,14 @@ function renderGrade(dias) {
 }
 
 grade.addEventListener("click", (e) => {
-  const td = e.target.closest("td.livre");
+  const td = e.target.closest("td[data-dia]");
   if (!td) return;
+  // com sessão de admin, qualquer célula abre o menu de administração
+  if (senhaSalva()) {
+    abrirAdminCelula(td);
+    return;
+  }
+  if (!td.classList.contains("livre")) return;
   formSolicitar.elements.dia.value = td.dataset.dia;
   formSolicitar.elements.inicio.value = td.dataset.inicio;
   formSolicitar.elements.fim.value = td.dataset.fim;
@@ -322,6 +343,92 @@ adminPanel.addEventListener("click", async (e) => {
   btn.disabled = true;
   try {
     await apiPost({ action: btn.dataset.acao, id: btn.dataset.id, senha: senhaSalva() });
+    setTimeout(carregarSemana, 1200);
+  } catch {
+    btn.disabled = false;
+  }
+});
+
+// ---- Admin: clicar numa célula pra mudar o estado dela ----
+
+const modalAdminCel = document.getElementById("modal-admin-cel");
+const adminResumo = document.getElementById("admin-resumo");
+const adminAcoes = document.getElementById("admin-acoes");
+document.getElementById("btn-admin-fechar").addEventListener("click", () => modalAdminCel.close());
+
+function abrirAdminCelula(td) {
+  const { dia, inicio, fim, id } = td.dataset;
+  const dow = new Date(dia + "T12:00:00").getDay();
+  const chave = dia + "|" + inicio;
+  const ov = overridesMap[chave];
+  const slot = slotsMap[chave];
+  const fixo = BLOQUEADOS[dow] && BLOQUEADOS[dow][inicio];
+
+  adminResumo.textContent = `${fmtDataBR(dia)} · ${inicio}–${fim}`;
+
+  let html = "";
+  if (slot && slot.status === "pendente") {
+    html = `<p class="dica" style="margin-bottom:.6rem">Pendente — ${escapar(slot.nome)}${slot.turma ? " (" + escapar(slot.turma) + ")" : ""}</p>
+      <div class="botoes" style="justify-content:flex-start">
+        <button class="btn-primario btn-mini" data-op="aprovar">Aprovar</button>
+        <button class="btn-perigo btn-mini" data-op="recusar">Recusar</button>
+      </div>`;
+  } else if (slot && slot.status === "aprovado") {
+    html = `<p class="dica" style="margin-bottom:.6rem">Aprovado — ${escapar(slot.nome)}${slot.turma ? " (" + escapar(slot.turma) + ")" : ""}</p>
+      <div class="botoes" style="justify-content:flex-start">
+        <button class="btn-perigo btn-mini" data-op="excluirAgendamento">Excluir agendamento</button>
+      </div>`;
+  } else if (ov) {
+    html = `<p class="dica" style="margin-bottom:.6rem">${ov.estado === "bloqueado" ? "Bloqueado manualmente" : "Desbloqueado manualmente"}</p>
+      <div class="botoes" style="justify-content:flex-start">
+        <button class="btn-sec btn-mini" data-op="padrao">Voltar ao padrão</button>
+        ${ov.estado === "livre" ? `<button class="btn-perigo btn-mini" data-op="bloquear">Bloquear</button>` : ""}
+      </div>`;
+  } else if (fixo) {
+    html = `<p class="dica" style="margin-bottom:.6rem">Bloqueado fixo${fixo !== "Bloqueado" ? " — " + escapar(fixo) : ""}</p>
+      <div class="botoes" style="justify-content:flex-start">
+        <button class="btn-sec btn-mini" data-op="desbloquear">Desbloquear só neste dia</button>
+      </div>`;
+  } else {
+    html = `<p class="dica" style="margin-bottom:.6rem">Horário livre</p>
+      <div class="botoes" style="justify-content:flex-start">
+        <button class="btn-perigo btn-mini" data-op="bloquear">Bloquear horário</button>
+      </div>
+      <div class="linha" style="margin-top:.7rem">
+        <input id="adm-nome" type="text" placeholder="Reservar pra quem">
+        <input id="adm-turma" type="text" placeholder="Turma" style="max-width:110px">
+      </div>
+      <div class="botoes" style="justify-content:flex-start;margin-top:.5rem">
+        <button class="btn-primario btn-mini" data-op="reservar">Reservar direto</button>
+      </div>`;
+  }
+
+  adminAcoes.innerHTML = html;
+  adminAcoes.dataset.dia = dia;
+  adminAcoes.dataset.inicio = inicio;
+  adminAcoes.dataset.fim = fim;
+  adminAcoes.dataset.id = id || "";
+  modalAdminCel.showModal();
+}
+
+adminAcoes.addEventListener("click", async (e) => {
+  const btn = e.target.closest("button[data-op]");
+  if (!btn) return;
+  const op = btn.dataset.op;
+  const { dia, inicio, fim, id } = adminAcoes.dataset;
+  btn.disabled = true;
+  try {
+    if (op === "reservar") {
+      const nome = document.getElementById("adm-nome").value;
+      const turma = document.getElementById("adm-turma").value;
+      await apiPost({ action: "reservarAdmin", servico: SERVICOS[0], dia, inicio, fim, nome, turma, senha: senhaSalva() });
+    } else if (op === "aprovar" || op === "recusar" || op === "excluirAgendamento") {
+      await apiPost({ action: op, id, senha: senhaSalva() });
+    } else {
+      const estado = op === "bloquear" ? "bloqueado" : op === "desbloquear" ? "livre" : "padrao";
+      await apiPost({ action: "definirEstado", servico: SERVICOS[0], dia, inicio, estado, senha: senhaSalva() });
+    }
+    modalAdminCel.close();
     setTimeout(carregarSemana, 1200);
   } catch {
     btn.disabled = false;
