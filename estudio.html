@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Agendamento do Estúdio</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <header>
+    <div class="header-linha">
+      <a class="voltar" href="index.html">&larr; Voltar</a>
+      <h1>Agendamento do Estúdio</h1>
+      <button id="btn-admin" class="btn btn-sec" type="button" style="color: var(--verde-escuro);">Área do admin</button>
+    </div>
+  </header>
+
+  <main>
+    <div id="avisos"></div>
+
+    <section class="card">
+      <div class="semana-nav">
+        <button id="btn-anterior" class="btn btn-sec btn-mini" type="button">&larr; Anterior</button>
+        <h3 id="titulo-semana"></h3>
+        <button id="btn-proxima" class="btn btn-sec btn-mini" type="button">Próxima &rarr;</button>
+      </div>
+
+      <div class="grade-wrap">
+        <table class="grade" id="grade"></table>
+      </div>
+
+      <p class="dica" style="margin-top: 0.75rem;">
+        Clique num horário livre (verde) pra solicitar.
+        Azul = aprovado · Amarelo = aguardando aprovação · Vermelho = bloqueado.
+      </p>
+    </section>
+
+    <section id="admin-panel" class="admin-box" hidden>
+      <h2 style="font-size: 1.1rem; margin-bottom: 0.75rem;">Painel do admin</h2>
+
+      <h3 style="font-size: 0.9rem; margin-bottom: 0.5rem;">Solicitações pendentes</h3>
+      <div id="lista-pendentes"></div>
+      <p id="pendentes-vazio" class="vazio" hidden>Nenhuma solicitação pendente.</p>
+
+      <h3 style="font-size: 0.9rem; margin: 1rem 0 0.5rem;">Aprovados nesta semana</h3>
+      <div id="lista-aprovados"></div>
+      <p id="aprovados-vazio" class="vazio" hidden>Nenhum agendamento aprovado nesta semana.</p>
+
+      <h3 style="font-size: 0.9rem; margin: 1rem 0 0.5rem;">Aviso fixo</h3>
+      <p class="dica" style="margin-bottom: 0.5rem;">Aparece no topo desta página e some sozinho depois de 5 dias.</p>
+      <form id="form-aviso" class="estilo">
+        <textarea name="texto" rows="2" required placeholder="Ex.: O estúdio não vai abrir na terça"></textarea>
+        <div class="botoes" style="margin-top: 0.25rem;">
+          <button type="submit" class="btn-primario btn-mini">Fixar aviso</button>
+        </div>
+      </form>
+      <div id="lista-avisos" style="margin-top: 0.5rem;"></div>
+      <p id="avisos-vazio" class="vazio" hidden>Nenhum aviso ativo.</p>
+    </section>
+  </main>
+
+  <dialog id="modal-solicitar">
+    <form id="form-solicitar" class="estilo">
+      <h2>Solicitar agendamento</h2>
+      <p class="dica" id="resumo-slot"></p>
+
+      <input type="hidden" name="dia" />
+      <input type="hidden" name="inicio" />
+      <input type="hidden" name="fim" />
+
+      <label>
+        Serviço *
+        <select name="servico" required></select>
+      </label>
+
+      <div class="linha">
+        <label>
+          Seu nome *
+          <input name="nome" type="text" required />
+        </label>
+        <label>
+          Turma *
+          <input name="turma" type="text" required placeholder="Ex.: 2ºB" />
+        </label>
+      </div>
+
+      <p id="form-feedback" class="feedback" hidden></p>
+
+      <div class="botoes">
+        <button type="button" id="btn-cancelar" class="btn-sec">Cancelar</button>
+        <button type="submit" id="btn-enviar" class="btn-primario">Solicitar</button>
+      </div>
+    </form>
+  </dialog>
+
+  <dialog id="modal-senha">
+    <form id="form-senha" class="estilo">
+      <h2>Área do admin</h2>
+      <label>
+        Senha do admin
+        <input name="senha" type="password" required autocomplete="off" />
+      </label>
+      <p id="senha-feedback" class="feedback" hidden></p>
+      <div class="botoes">
+        <button type="button" id="btn-senha-cancelar" class="btn-sec">Cancelar</button>
+        <button type="submit" class="btn-primario">Entrar</button>
+      </div>
+    </form>
+  </dialog>
+
+  <footer>
+    <p>Horários de 08:00 às 18:40, de segunda a sexta.</p>
+    <p>Feito por alunos, pra alunos — <strong>Artur · INI2026</strong></p>
+  </footer>
+
+  <script src="comum.js"></script>
+  <script src="estudio.js"></script>
+</body>
+</html>

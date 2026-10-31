@@ -96,9 +96,11 @@ async function carregarSemana() {
   try {
     const data = await apiGet({ action: "listarSemana", inicio: inicioISO, fim: fimISO });
     slotsMap = {};
-    (data.slots || []).forEach((s) => {
-      slotsMap[s.dia + "|" + s.inicio] = s;
-    });
+    (data.slots || [])
+      .filter((s) => s.servico === "Quadra")
+      .forEach((s) => {
+        slotsMap[s.dia + "|" + s.inicio] = s;
+      });
   } catch {
     slotsMap = {};
   }
@@ -258,8 +260,9 @@ formSenha.addEventListener("submit", async (e) => {
 });
 
 function renderPendentes(pendentes) {
-  pendentesVazio.hidden = pendentes.length > 0;
-  listaPendentes.innerHTML = pendentes
+  const filtrados = pendentes.filter((s) => s.servico === "Quadra");
+  pendentesVazio.hidden = filtrados.length > 0;
+  listaPendentes.innerHTML = filtrados
     .map(
       (s) => `
       <div class="admin-item">

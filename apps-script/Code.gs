@@ -335,31 +335,45 @@ function postar(p) {
 
 // ---------- Agendamentos ----------
 
-const SLOTS_INICIO = ["10:50", "11:40", "12:30", "13:20", "14:10", "15:00", "16:10", "17:00", "17:50"];
+const SLOTS_INICIO = {
+  Quadra: ["10:50", "11:40", "12:30", "13:20", "14:10", "15:00", "16:10", "17:00", "17:50"],
+  "Estúdio": ["08:00", "08:50", "09:40", "10:50", "11:40", "12:30", "13:20", "14:10", "15:00", "16:10", "17:00", "17:50"],
+};
 
-// 1=seg ... 5=sex — horários de início bloqueados (fixos da escola/INI1)
+// 1=seg ... 5=sex — horários de início bloqueados por serviço
 const BLOQUEADOS = {
-  "1": ["11:40", "12:30", "13:20", "14:10", "15:00", "16:10", "17:00", "17:50"],
-  "2": ["11:40", "12:30", "13:20", "14:10", "15:00", "16:10", "17:00"],
-  "3": ["11:40", "12:30", "13:20", "14:10", "16:10", "17:00", "17:50"],
-  "4": ["10:50", "11:40", "12:30", "13:20", "14:10", "15:00", "16:10", "17:00"],
-  "5": ["10:50", "11:40", "12:30", "14:10", "15:00", "16:10", "17:00"],
+  Quadra: {
+    "1": ["11:40", "12:30", "13:20", "14:10", "15:00", "16:10", "17:00", "17:50"],
+    "2": ["11:40", "12:30", "13:20", "14:10", "15:00", "16:10", "17:00"],
+    "3": ["11:40", "12:30", "13:20", "14:10", "16:10", "17:00", "17:50"],
+    "4": ["10:50", "11:40", "12:30", "13:20", "14:10", "15:00", "16:10", "17:00"],
+    "5": ["10:50", "11:40", "12:30", "14:10", "15:00", "16:10", "17:00"],
+  },
+  "Estúdio": {
+    "1": ["08:00", "08:50", "12:30", "15:00", "16:10", "17:00", "17:50"],
+    "2": ["12:30", "13:20", "17:50"],
+    "3": ["08:00", "08:50", "16:10", "17:00", "17:50"],
+    "4": ["08:00", "08:50", "12:30", "13:20", "17:00", "17:50"],
+    "5": ["08:00", "08:50", "09:40", "10:50", "11:40", "12:30", "13:20", "14:10", "15:00", "16:10", "17:00", "17:50"],
+  },
 };
 
 function solicitar(p) {
   if (!p.dia || !p.inicio || !p.servico || !p.nome || !p.turma) {
     return { ok: false, erro: "campos" };
   }
-  if (SLOTS_INICIO.indexOf(p.inicio) < 0) return { ok: false, erro: "horario" };
+  const slotsServico = SLOTS_INICIO[p.servico];
+  if (!slotsServico || slotsServico.indexOf(p.inicio) < 0) return { ok: false, erro: "horario" };
 
   const partes = p.dia.split("-").map(Number);
   const dow = String(new Date(partes[0], partes[1] - 1, partes[2]).getDay());
-  if ((BLOQUEADOS[dow] || []).indexOf(p.inicio) >= 0) {
+  const mapaBloqueados = (BLOQUEADOS[p.servico] || {})[dow] || [];
+  if (mapaBloqueados.indexOf(p.inicio) >= 0) {
     return { ok: false, erro: "bloqueado" };
   }
 
   const conflito = ler("Agendamentos").some(
-    r => txt(r.dia) === p.dia && txt(r.inicio) === p.inicio && r.status === "aprovado"
+    r => r.servico === p.servico && txt(r.dia) === p.dia && txt(r.inicio) === p.inicio && r.status === "aprovado"
   );
   if (conflito) return { ok: false, erro: "ocupado" };
 
