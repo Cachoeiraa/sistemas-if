@@ -1,8 +1,29 @@
 // ---- Configuração dos horários ----
-const HORA_INICIO = 10 * 60 + 50; // 10:50
-const HORA_FIM = 18 * 60 + 40;    // 18:40
-const PASSO = 30;                 // períodos de 30 min
-const DIAS_SEMANA = [1, 2, 3, 4, 5]; // seg a sex (pra incluir sábado, adicione 6)
+// Períodos de 50 min + intervalo de 20 min (15:50–16:10, recreio da tarde)
+const SLOTS = [
+  { inicio: "10:50", fim: "11:40" },
+  { inicio: "11:40", fim: "12:30" },
+  { inicio: "12:30", fim: "13:20" },
+  { inicio: "13:20", fim: "14:10" },
+  { inicio: "14:10", fim: "15:00" },
+  { inicio: "15:00", fim: "15:50" },
+  { inicio: "15:50", fim: "16:10", intervalo: true },
+  { inicio: "16:10", fim: "17:00" },
+  { inicio: "17:00", fim: "17:50" },
+  { inicio: "17:50", fim: "18:40" },
+];
+
+// Horários bloqueados por dia da semana (1=seg ... 5=sex)
+// chave = horário de início do período, valor = texto que aparece na célula
+const BLOQUEADOS = {
+  1: { "11:40": "Bloqueado", "12:30": "Bloqueado", "13:20": "Bloqueado", "14:10": "Bloqueado", "15:00": "Bloqueado", "16:10": "Bloqueado", "17:00": "INI1", "17:50": "INI1" },
+  2: { "11:40": "Bloqueado", "12:30": "Bloqueado", "13:20": "Bloqueado", "14:10": "Bloqueado", "15:00": "Bloqueado", "16:10": "Bloqueado", "17:00": "Bloqueado" },
+  3: { "11:40": "Bloqueado", "12:30": "Bloqueado", "13:20": "Bloqueado", "14:10": "Bloqueado", "16:10": "Bloqueado", "17:00": "Bloqueado", "17:50": "Bloqueado" },
+  4: { "10:50": "Bloqueado", "11:40": "Bloqueado", "12:30": "Bloqueado", "13:20": "Bloqueado", "14:10": "Bloqueado", "15:00": "Bloqueado", "16:10": "Bloqueado", "17:00": "Bloqueado" },
+  5: { "10:50": "Bloqueado", "11:40": "Bloqueado", "12:30": "Bloqueado", "14:10": "Bloqueado", "15:00": "Bloqueado", "16:10": "Bloqueado", "17:00": "Bloqueado" },
+};
+
+const DIAS_SEMANA = [1, 2, 3, 4, 5]; // seg a sex
 const NOMES_DIAS = ["Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"];
 const SERVICOS = [
   "Quadra",
@@ -36,10 +57,6 @@ const aprovadosVazio = document.getElementById("aprovados-vazio");
 let semanaOffset = 0;
 let slotsMap = {}; // "dia|inicio" -> slot
 
-function minutosParaHora(m) {
-  return String(Math.floor(m / 60)).padStart(2, "0") + ":" + String(m % 60).padStart(2, "0");
-}
-
 function dataParaISO(d) {
   return (
     d.getFullYear() +
@@ -65,14 +82,6 @@ function diasDaSemana(offset) {
     d.setDate(d.getDate() + i);
     return d;
   });
-}
-
-function intervalos() {
-  const lista = [];
-  for (let t = HORA_INICIO; t < HORA_FIM; t += PASSO) {
-    lista.push({ inicio: minutosParaHora(t), fim: minutosParaHora(Math.min(t + PASSO, HORA_FIM)) });
-  }
-  return lista;
 }
 
 function slotPassou(diaISO, inicio) {
@@ -110,24 +119,31 @@ async function carregarSemana() {
 }
 
 function renderGrade(dias) {
-  const intervalosLista = intervalos();
-
   let html = "<thead><tr><th></th>";
   dias.forEach((d, i) => {
     html += `<th>${NOMES_DIAS[DIAS_SEMANA[i] - 1]}<small>${fmtDataBR(dataParaISO(d))}</small></th>`;
   });
   html += "</tr></thead><tbody>";
 
-  intervalosLista.forEach(({ inicio, fim }) => {
+  SLOTS.forEach(({ inicio, fim, intervalo }) => {
     html += `<tr><td class="hora">${inicio}<br><small style="font-weight:400">${fim}</small></td>`;
     dias.forEach((d) => {
       const diaISO = dataParaISO(d);
+
+      if (intervalo) {
+        html += `<td class="intervalo">Intervalo</td>`;
+        return;
+      }
+
+      const bloqueado = BLOQUEADOS[d.getDay()] && BLOQUEADOS[d.getDay()][inicio];
       const slot = slotsMap[diaISO + "|" + inicio];
 
-      if (slot && slot.status === "aprovado") {
+      if (bloqueado) {
+        html += `<td class="bloqueado">${escapar(bloqueado)}</td>`;
+      } else if (slot && slot.status === "aprovado") {
         html += `<td class="ocupado"><div class="servico">${escapar(slot.servico)}</div><div class="quem">${escapar(slot.nome)}${slot.turma ? " — " + escapar(slot.turma) : ""}</div></td>`;
       } else if (slot && slot.status === "pendente") {
-        html += `<td class="pendente">Em análise</td>`;
+        html += `<td class="pendente"><div class="servico">${escapar(slot.servico)}</div><div class="quem">${escapar(slot.nome)}${slot.turma ? " — " + escapar(slot.turma) : ""}</div></td>`;
       } else if (slotPassou(diaISO, inicio)) {
         html += `<td class="passado">—</td>`;
       } else {

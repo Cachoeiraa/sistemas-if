@@ -228,17 +228,23 @@ table.grade {
 
 .grade td.livre {
   cursor: pointer;
-  color: var(--verde);
+  background: #eaf6ee;
+  color: var(--verde-escuro);
   font-weight: 600;
 }
 
-.grade td.livre:hover { background: #eaf6ee; }
+.grade td.livre:hover { background: #cdeeda; }
 
-.grade td.ocupado { background: #eaf6ee; }
-.grade td.ocupado .servico { font-weight: 700; color: var(--verde-escuro); }
-.grade td.ocupado .quem { font-size: 0.72rem; color: var(--texto-suave); }
+.grade td.ocupado { background: #dbeafe; }
+.grade td.ocupado .servico { font-weight: 700; color: var(--azul); }
+.grade td.ocupado .quem { font-size: 0.72rem; color: #1e40af; }
 
-.grade td.pendente { background: #fdf3dd; color: var(--amarelo); font-weight: 600; }
+.grade td.pendente { background: #fdf3dd; }
+.grade td.pendente .servico { font-weight: 700; color: var(--amarelo); }
+.grade td.pendente .quem { font-size: 0.72rem; color: #92600a; }
+
+.grade td.bloqueado { background: #fdecea; color: var(--vermelho); font-weight: 700; }
+.grade td.intervalo { background: #eef0f2; color: var(--texto-suave); font-style: italic; }
 .grade td.passado { background: #fafafa; color: #cbd2d8; }
 
 /* ---- painel admin ---- */
