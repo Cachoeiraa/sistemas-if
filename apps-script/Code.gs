@@ -594,8 +594,8 @@ function listarSemana(inicio, fim) {
 function reportar(p) {
   const titulo = corta(p.titulo, 120);
   const descricao = corta(p.descricao, 600);
-  const TIPOS = ["Manutenção", "Reclamação", "Outro"];
-  const tipo = TIPOS.indexOf(p.tipo) >= 0 ? p.tipo : "Manutenção";
+  const TIPOS = ["Reclamação", "Sugestão", "Manutenção", "Outro"];
+  const tipo = TIPOS.indexOf(p.tipo) >= 0 ? p.tipo : "Reclamação";
   if (!titulo || !descricao) return { ok: false, erro: "campos" };
   const foto = salvarFoto(p.foto, "manutencao");
   adicionar("Reports", {

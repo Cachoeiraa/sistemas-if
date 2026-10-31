@@ -3,14 +3,14 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Reportar / Reclamações</title>
+  <title>Reclamações / Sugestões</title>
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
   <header>
     <div class="header-linha">
       <a class="voltar" href="index.html">&larr; Voltar</a>
-      <h1>Reportar / Reclamações</h1>
+      <h1>Reclamações / Sugestões</h1>
       <button id="btn-admin" class="btn btn-sec" type="button" style="color: var(--verde-escuro);">Área do admin</button>
     </div>
   </header>
@@ -19,13 +19,15 @@
     <div id="avisos"></div>
 
     <section class="card">
-      <h2>Reportar um problema</h2>
+      <h2>Enviar uma mensagem</h2>
+      <p class="dica" style="margin-bottom:0.75rem;">Envie suas reclamações ou sugestões para a escola e para o grêmio.</p>
       <form id="form-report" class="estilo">
         <label>
           Tipo *
           <select name="tipo" required>
-            <option>Manutenção</option>
             <option>Reclamação</option>
+            <option>Sugestão</option>
+            <option>Manutenção</option>
             <option>Outro</option>
           </select>
         </label>
@@ -49,7 +51,7 @@
         <p id="form-feedback" class="feedback" hidden></p>
 
         <div class="botoes">
-          <button type="submit" id="btn-enviar" class="btn-primario">Reportar</button>
+          <button type="submit" id="btn-enviar" class="btn-primario">Enviar</button>
         </div>
       </form>
     </section>
@@ -73,9 +75,9 @@
     </section>
 
     <section>
-      <h2 style="margin-bottom: 1rem; font-size: 1.1rem;">Reportadas</h2>
+      <h2 style="margin-bottom: 1rem; font-size: 1.1rem;">Mensagens</h2>
       <div id="feed" class="feed"></div>
-      <p id="feed-vazio" class="vazio" hidden>Nenhuma reportada — tudo funcionando.</p>
+      <p id="feed-vazio" class="vazio" hidden>Nenhuma mensagem — tudo tranquilo.</p>
     </section>
   </main>
 
@@ -95,7 +97,7 @@
   </dialog>
 
   <footer>
-    <p>Problema de manutenção, reclamação ou qualquer outra coisa — reporta que a equipe fica sabendo.</p>
+    <p>Reclamação, sugestão ou qualquer outra coisa — envia que a escola e o grêmio ficam sabendo.</p>
     <p>Feito por alunos, pra alunos — <strong>Artur · INI2026</strong></p>
   </footer>
 

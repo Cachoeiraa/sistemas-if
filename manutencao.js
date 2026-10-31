@@ -15,8 +15,9 @@ const listaAdmin = document.getElementById("lista-admin");
 const adminVazio = document.getElementById("admin-vazio");
 
 const CLASSE_TAG = {
-  "Manutenção": "report",
   "Reclamação": "perdido",
+  "Sugestão": "sugestao",
+  "Manutenção": "report",
   "Outro": "achado",
 };
 
@@ -36,7 +37,7 @@ form.addEventListener("submit", async (e) => {
   try {
     await apiPost(dados);
     feedback.className = "feedback ok";
-    feedback.textContent = "Reportada registrada!";
+    feedback.textContent = "Mensagem enviada!";
     feedback.hidden = false;
     form.reset();
     setTimeout(carregarFeed, 1500);
@@ -47,7 +48,7 @@ form.addEventListener("submit", async (e) => {
   }
 
   btnEnviar.disabled = false;
-  btnEnviar.textContent = "Reportar";
+  btnEnviar.textContent = "Enviar";
 });
 
 function renderReport(r) {

@@ -216,6 +216,7 @@ iframe.planilha.alta { height: 560px; }
 .tag.achado { background: #eaf6ee; color: var(--verde-escuro); }
 .tag.perdido { background: #fdecea; color: var(--vermelho); }
 .tag.report { background: #fdf3dd; color: var(--amarelo); }
+.tag.sugestao { background: #e8effe; color: var(--azul); }
 
 .post .campo { font-size: 0.85rem; }
 .post .campo strong { color: var(--texto-suave); font-weight: 600; }
