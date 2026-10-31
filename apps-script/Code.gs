@@ -472,12 +472,16 @@ const BLOQUEADOS = {
 
 const DIAS_GRADE = { Quadra: "12345", "Estúdio": "123456" }; // domingo nunca entra
 
-// Override manual do admin (aba Estados): "bloqueado" trava, "livre" libera fixo
+// Override manual do admin (aba Estados): "bloqueado" trava, "livre" libera fixo.
+// dia = data específica ou "sempre:N" (N = dia da semana) pra valer sempre.
 function estadoOverride(servico, dia, inicio) {
-  const row = ler("Estados").find(
-    r => r.servico === servico && txt(r.dia) === dia && txt(r.inicio) === inicio
-  );
-  return row ? String(row.estado) : "";
+  const rows = ler("Estados").filter(r => r.servico === servico && txt(r.inicio) === inicio);
+  const esp = rows.find(r => txt(r.dia) === dia);
+  if (esp) return String(esp.estado);
+  const partes = dia.split("-").map(Number);
+  const dow = new Date(partes[0], partes[1] - 1, partes[2]).getDay();
+  const perm = rows.find(r => txt(r.dia) === "sempre:" + dow);
+  return perm ? String(perm.estado) : "";
 }
 
 function validarAgendamento(p) {
@@ -524,14 +528,18 @@ function solicitar(p) {
   return { ok: true };
 }
 
-// admin bloqueia/desbloqueia/volta ao padrão uma célula específica
+// admin bloqueia/desbloqueia/volta ao padrão uma célula (nesse dia ou pra sempre)
 function definirEstado(p) {
   const slotsServico = SLOTS_INICIO[p.servico];
   if (!dataValida(p.dia) || !slotsServico || slotsServico.indexOf(p.inicio) < 0) return false;
+  const partes = p.dia.split("-").map(Number);
+  const dow = new Date(partes[0], partes[1] - 1, partes[2]).getDay();
+  const alvo = p.sempre === "1" ? "sempre:" + dow : p.dia;
+  const remover = p.estado === "padrao" ? [p.dia, "sempre:" + dow] : [alvo];
   const sh = aba("Estados");
   const vals = sh.getDataRange().getValues();
   for (let i = vals.length - 1; i >= 1; i--) {
-    if (String(vals[i][1]) === p.servico && txt(vals[i][2]) === p.dia && txt(vals[i][3]) === p.inicio) {
+    if (String(vals[i][1]) === p.servico && remover.indexOf(String(vals[i][2])) >= 0 && txt(vals[i][3]) === p.inicio) {
       sh.deleteRow(i + 1);
     }
   }
@@ -539,12 +547,12 @@ function definirEstado(p) {
     adicionar("Estados", {
       id: Utilities.getUuid(),
       servico: p.servico,
-      dia: p.dia,
+      dia: alvo,
       inicio: p.inicio,
       estado: p.estado,
     });
   }
-  return true; // "padrao" só remove o override
+  return true; // "padrao" só remove o(s) override(s)
 }
 
 // admin reserva direto (já nasce aprovado) — pode até em célula bloqueada
@@ -576,7 +584,7 @@ function listarSemana(inicio, fim) {
       turma: r.turma,
     }));
   const estados = ler("Estados")
-    .filter(r => txt(r.dia) >= inicio && txt(r.dia) <= fim)
+    .filter(r => { const d = txt(r.dia); return (d >= inicio && d <= fim) || d.indexOf("sempre:") === 0; })
     .map(r => ({ servico: r.servico, dia: txt(r.dia), inicio: txt(r.inicio), estado: r.estado }));
   return { ok: true, slots: slots, estados: estados };
 }

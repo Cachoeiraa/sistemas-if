@@ -137,7 +137,7 @@ function renderGrade(dias) {
       const bloqueado = BLOQUEADOS[d.getDay()] && BLOQUEADOS[d.getDay()][inicio];
       const chave = diaISO + "|" + inicio;
       const slot = slotsMap[chave];
-      const ov = overridesMap[chave];
+      const ov = overridesMap[chave] || overridesMap["sempre:" + d.getDay() + "|" + inicio];
       const attrs = `data-dia="${diaISO}" data-inicio="${inicio}" data-fim="${fim}"${slot ? ` data-id="${escapar(slot.id)}"` : ""}`;
 
       if (slot && slot.status === "aprovado") {
@@ -357,7 +357,8 @@ function abrirAdminCelula(td) {
   const { dia, inicio, fim, id } = td.dataset;
   const dow = new Date(dia + "T12:00:00").getDay();
   const chave = dia + "|" + inicio;
-  const ov = overridesMap[chave];
+  const ov = overridesMap[chave] || overridesMap["sempre:" + dow + "|" + inicio];
+  const ovSempre = ov && String(ov.dia).indexOf("sempre:") === 0;
   const slot = slotsMap[chave];
   const fixo = BLOQUEADOS[dow] && BLOQUEADOS[dow][inicio];
 
@@ -376,7 +377,10 @@ function abrirAdminCelula(td) {
         <button class="btn-perigo btn-mini" data-op="excluirAgendamento">Excluir agendamento</button>
       </div>`;
   } else if (ov) {
-    html = `<p class="dica" style="margin-bottom:.6rem">${ov.estado === "bloqueado" ? "Bloqueado manualmente" : "Desbloqueado manualmente"}</p>
+    const rotulo = ov.estado === "bloqueado"
+      ? (ovSempre ? "Bloqueado pra sempre" : "Bloqueado só neste dia")
+      : (ovSempre ? "Desbloqueado pra sempre" : "Desbloqueado só neste dia");
+    html = `<p class="dica" style="margin-bottom:.6rem">${rotulo}</p>
       <div class="botoes" style="justify-content:flex-start">
         <button class="btn-sec btn-mini" data-op="padrao">Voltar ao padrão</button>
         ${ov.estado === "livre" ? `<button class="btn-perigo btn-mini" data-op="bloquear">Bloquear</button>` : ""}
@@ -385,11 +389,13 @@ function abrirAdminCelula(td) {
     html = `<p class="dica" style="margin-bottom:.6rem">Bloqueado fixo${fixo !== "Bloqueado" ? " — " + escapar(fixo) : ""}</p>
       <div class="botoes" style="justify-content:flex-start">
         <button class="btn-sec btn-mini" data-op="desbloquear">Desbloquear só neste dia</button>
+        <button class="btn-sec btn-mini" data-op="desbloquearSempre">Desbloquear pra sempre</button>
       </div>`;
   } else {
     html = `<p class="dica" style="margin-bottom:.6rem">Horário livre</p>
       <div class="botoes" style="justify-content:flex-start">
-        <button class="btn-perigo btn-mini" data-op="bloquear">Bloquear horário</button>
+        <button class="btn-perigo btn-mini" data-op="bloquear">Bloquear neste dia</button>
+        <button class="btn-perigo btn-mini" data-op="bloquearSempre">Bloquear pra sempre</button>
       </div>
       <div class="linha" style="margin-top:.7rem">
         <input id="adm-nome" type="text" placeholder="Reservar pra quem">
@@ -422,8 +428,9 @@ adminAcoes.addEventListener("click", async (e) => {
     } else if (op === "aprovar" || op === "recusar" || op === "excluirAgendamento") {
       await apiPost({ action: op, id, senha: senhaSalva() });
     } else {
-      const estado = op === "bloquear" ? "bloqueado" : op === "desbloquear" ? "livre" : "padrao";
-      await apiPost({ action: "definirEstado", servico: SERVICOS[0], dia, inicio, estado, senha: senhaSalva() });
+      const estado = op === "bloquear" || op === "bloquearSempre" ? "bloqueado" : op === "desbloquear" || op === "desbloquearSempre" ? "livre" : "padrao";
+      const sempre = op === "bloquearSempre" || op === "desbloquearSempre" ? "1" : "0";
+      await apiPost({ action: "definirEstado", servico: SERVICOS[0], dia, inicio, estado, sempre, senha: senhaSalva() });
     }
     modalAdminCel.close();
     setTimeout(carregarSemana, 1200);
