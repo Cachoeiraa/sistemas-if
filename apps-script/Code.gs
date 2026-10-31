@@ -309,6 +309,7 @@ function doPost(e) {
       case "excluirEvento": out = excluirEvento(p); break;
       case "postar": out = postar(p); break;
       case "reagir": out = reagir(p); break;
+      case "excluirPost": out = admin(p, "ACHADOS", () => excluirLinha("Posts", p.id)); break;
       case "solicitar": out = solicitar(p); break;
       case "aprovar": out = admin(p, areaDoAgendamento(p.id), () => atualizar("Agendamentos", p.id, "status", "aprovado")); break;
       case "recusar":
@@ -545,7 +546,7 @@ function reportar(p) {
 
 // ---------- Avisos fixados pelo admin (expiram em DIAS_AVISO dias) ----------
 
-const PAGINAS_AVISO = ["quadra", "estudio", "reclamacoes"];
+const PAGINAS_AVISO = ["quadra", "estudio", "reclamacoes", "achados"];
 
 function fixarAviso(p) {
   const texto = corta(p.texto, 250);

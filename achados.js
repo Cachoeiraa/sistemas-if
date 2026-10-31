@@ -1,5 +1,6 @@
 const DIAS_POST = 5;
 const EMOJIS = ["🍅", "😂", "🤡", "👏", "😱"];
+const PAGINA = "achados"; // identifica os avisos e a senha desta página
 
 const form = document.getElementById("form-post");
 const tipoInput = document.getElementById("tipo");
@@ -10,6 +11,15 @@ const feedback = document.getElementById("form-feedback");
 const btnEnviar = document.getElementById("btn-enviar");
 const feed = document.getElementById("feed");
 const feedVazio = document.getElementById("feed-vazio");
+
+const modalSenha = document.getElementById("modal-senha");
+const formSenha = document.getElementById("form-senha");
+const senhaFeedback = document.getElementById("senha-feedback");
+const adminPanel = document.getElementById("admin-panel");
+const listaAdmin = document.getElementById("lista-admin");
+const adminVazio = document.getElementById("admin-vazio");
+
+let postsCache = [];
 
 function definirTipo(tipo) {
   tipoInput.value = tipo;
@@ -120,12 +130,88 @@ feed.addEventListener("click", async (e) => {
 async function carregarFeed() {
   try {
     const data = await apiGet({ action: "listarPosts" });
-    const posts = data.posts || [];
-    feedVazio.hidden = posts.length > 0;
-    feed.innerHTML = posts.map(renderPost).join("");
+    postsCache = data.posts || [];
+    feedVazio.hidden = postsCache.length > 0;
+    feed.innerHTML = postsCache.map(renderPost).join("");
+    if (!adminPanel.hidden) renderAdmin();
   } catch {
     feed.innerHTML = `<p class="vazio">Não foi possível carregar os posts.</p>`;
   }
 }
 
+// ---- Admin ----
+
+function senhaSalva() {
+  return sessionStorage.getItem("senha_" + PAGINA) || "";
+}
+
+document.getElementById("btn-admin").addEventListener("click", () => {
+  if (senhaSalva()) {
+    adminPanel.hidden = false;
+    renderAdmin();
+    adminPanel.scrollIntoView({ behavior: "smooth" });
+  } else {
+    senhaFeedback.hidden = true;
+    modalSenha.showModal();
+  }
+});
+
+document.getElementById("btn-senha-cancelar").addEventListener("click", () => modalSenha.close());
+
+formSenha.addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const senha = formSenha.elements.senha.value;
+  try {
+    const data = await apiGet({ action: "verificarSenha", senha, pagina: PAGINA });
+    if (!data.ok) {
+      senhaFeedback.className = "feedback erro";
+      senhaFeedback.textContent = "Senha incorreta.";
+      senhaFeedback.hidden = false;
+      return;
+    }
+    sessionStorage.setItem("senha_" + PAGINA, senha);
+    modalSenha.close();
+    adminPanel.hidden = false;
+    renderAdmin();
+  } catch {
+    senhaFeedback.className = "feedback erro";
+    senhaFeedback.textContent = "Erro ao conectar.";
+    senhaFeedback.hidden = false;
+  }
+});
+
+function renderAdmin() {
+  renderAvisosAdmin(PAGINA);
+  adminVazio.hidden = postsCache.length > 0;
+  listaAdmin.innerHTML = postsCache
+    .map(
+      (p) => `
+      <div class="admin-item">
+        <div class="info">
+          <strong>${escapar(p.tipo === "achado" ? "Achado" : "Perdido")}</strong> — ${escapar(p.nome)}
+          <small>${fmtDataBR(p.criadoEm)} · ${escapar(p.descricao || "").slice(0, 80)}${p.descricao && p.descricao.length > 80 ? "…" : ""}</small>
+        </div>
+        <div class="botoes">
+          <button class="btn-perigo btn-mini" data-id="${escapar(p.id)}">Excluir</button>
+        </div>
+      </div>`
+    )
+    .join("");
+}
+
+listaAdmin.addEventListener("click", async (e) => {
+  const btn = e.target.closest("button[data-id]");
+  if (!btn) return;
+  if (!confirm("Excluir esse post?")) return;
+  btn.disabled = true;
+  try {
+    await apiPost({ action: "excluirPost", id: btn.dataset.id, senha: senhaSalva() });
+    setTimeout(carregarFeed, 1200);
+  } catch {
+    btn.disabled = false;
+  }
+});
+
+carregarAvisos(PAGINA);
+initAvisosAdmin(PAGINA, senhaSalva);
 carregarFeed();
